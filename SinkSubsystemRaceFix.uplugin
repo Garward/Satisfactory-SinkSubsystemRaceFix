@@ -1,9 +1,9 @@
 {
 	"FileVersion": 3,
-	"Version": 2,
-	"SemVersion": "1.1.0",
-	"FriendlyName": "SinkSubsystemRaceFix",
-	"Description": "Fixes intermittent client crashes when joining heavily modded multiplayer servers. Catches two race conditions where the client tries to access a world subsystem before it has finished replicating from the server, replacing the resulting crash with a brief deferred retry. Currently guards Resource Sink BeginPlay (waits for ResourceSinkSubsystem to arrive) and UFGSchematic CanGiveAccessToSchematic (returns false until SchematicManager arrives). Pure runtime patch with no added content and no save impact, safe to add or remove at any time.",
+	"Version": 1,
+	"SemVersion": "1.3.0",
+	"FriendlyName": "Server Join Race Fix",
+	"Description": "Fixes the cluster of replication-race bugs that hit clients joining heavily-modded Satisfactory dedicated (and listen) servers. v1.3.0 grows the patch set to thirteen hooks covering: Resource Sink BeginPlay null-deref; UFGSchematic CanGiveAccessToSchematic null-deref; UFGRecipeManager null queries from build-menu and build-gun dismantle; mIsOnline / RegisterPlayerWithSession gates that fail on dedicated NULL-OSS; aggressive ForceNetUpdate on critical subsystems during join to beat replication starvation; suppression of MOVE_None resets that freeze player movement; suppression of UpdateMovementModeOnRespawn freeze; auto-collapse of stuck respawn-overlay widgets that masquerade as a loading screen; and the actual join-completion repair (clears Jump/Hotbar/BuildGun gates and force-flips the character-level online state once the controller is possessed and join-critical objects exist). Pure runtime patch — no content, no save impact, safe to add or remove at any time. Internal module name kept as SinkSubsystemRaceFix for save and version-link continuity.",
 	"Category": "Modding",
 	"CreatedBy": "garward",
 	"CreatedByURL": "",

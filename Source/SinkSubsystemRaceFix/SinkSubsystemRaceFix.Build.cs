@@ -19,7 +19,7 @@ public class SinkSubsystemRaceFix : ModuleRules
 			"SML"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] {});
+		PrivateDependencyModuleNames.AddRange(new string[] { "MoviePlayer", "UMG", "Slate", "SlateCore" });
 		DynamicallyLoadedModuleNames.AddRange(new string[] {});
 	}
 }
