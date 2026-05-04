@@ -1,0 +1,32 @@
+# UE build outputs
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+
+# UE / Unreal Header Tool generated
+*.generated.h
+*.gen.cpp
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+
+# Compiled symbols and binaries
+*.pdb
+*.dll
+*.exe
+*.lib
+
+# Author-private path map (user-specific)
+PATHS.md
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini

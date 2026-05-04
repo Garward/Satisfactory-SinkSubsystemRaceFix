@@ -1,0 +1,35 @@
+{
+	"FileVersion": 3,
+	"Version": 2,
+	"SemVersion": "1.1.0",
+	"FriendlyName": "SinkSubsystemRaceFix",
+	"Description": "Fixes intermittent client crashes when joining heavily modded multiplayer servers. Catches two race conditions where the client tries to access a world subsystem before it has finished replicating from the server, replacing the resulting crash with a brief deferred retry. Currently guards Resource Sink BeginPlay (waits for ResourceSinkSubsystem to arrive) and UFGSchematic CanGiveAccessToSchematic (returns false until SchematicManager arrives). Pure runtime patch with no added content and no save impact, safe to add or remove at any time.",
+	"Category": "Modding",
+	"CreatedBy": "garward",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": false,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"AcceptsAnyRemoteVersion": true,
+	"RemoteVersionRange": "^1.0.0",
+	"GameVersion": ">=463028",
+	"Modules": [
+		{
+			"Name": "SinkSubsystemRaceFix",
+			"Type": "Runtime",
+			"LoadingPhase": "PostEngineInit",
+			"WhitelistPlatforms": [ "Win64", "Linux" ]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "SML",
+			"Enabled": true,
+			"SemVersion": "^3.11.0"
+		}
+	]
+}
