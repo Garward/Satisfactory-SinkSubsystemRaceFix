@@ -1,9 +1,9 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"SemVersion": "1.3.0",
+	"SemVersion": "1.7.0",
 	"FriendlyName": "Server Join Race Fix",
-	"Description": "Fixes the cluster of replication-race bugs that hit clients joining heavily-modded Satisfactory dedicated (and listen) servers. v1.3.0 grows the patch set to thirteen hooks covering: Resource Sink BeginPlay null-deref; UFGSchematic CanGiveAccessToSchematic null-deref; UFGRecipeManager null queries from build-menu and build-gun dismantle; mIsOnline / RegisterPlayerWithSession gates that fail on dedicated NULL-OSS; aggressive ForceNetUpdate on critical subsystems during join to beat replication starvation; suppression of MOVE_None resets that freeze player movement; suppression of UpdateMovementModeOnRespawn freeze; auto-collapse of stuck respawn-overlay widgets that masquerade as a loading screen; and the actual join-completion repair (clears Jump/Hotbar/BuildGun gates and force-flips the character-level online state once the controller is possessed and join-critical objects exist). Pure runtime patch — no content, no save impact, safe to add or remove at any time. Internal module name kept as SinkSubsystemRaceFix for save and version-link continuity.",
+	"Description": "Fixes the cluster of replication-race bugs that hit clients joining heavily-modded Satisfactory dedicated (and listen) servers. v1.7.0 adds Hook 29 — the connection-netspeed override, which turned out to be the actual ceiling on heavy-mod join performance. Vanilla negotiates a per-connection netspeed around 120000 bytes/sec; on heavy-mod saves this throttles the entire replication pipeline regardless of any higher-level budget — Hook 26's actor-discovery budget was queueing data the connection could not drain. Hook 29 forces APlayerController::SetNetSpeed on both client and server during the join window to a CVar-tunable value (r.SinkRaceFix.NetSpeed.ForcedJoinNetSpeed, default 500000), with master toggle r.SinkRaceFix.NetSpeed.Enable. Field-confirmed result on a heavy-mod dedicated server: 'feels like singleplayer.' v1.6.0 coverage retained: Hook 26 after-hooks UFGReplicationGraph::InitGlobalGraphNodes and re-calls SetActorDiscoveryBudget (vanilla hardcodes 20 kBps) with a CVar-tunable value (r.SinkRaceFix.RepGraph.ActorDiscoveryBudget, default 500 kBps, clamp 20..2000), master toggle r.SinkRaceFix.RepGraph.Enable. Implemented via SML SUBSCRIBE_METHOD_VIRTUAL_AFTER on the derived UFGReplicationGraph class. v1.5.1 coverage retained: legacy-proxy chunked path (Hooks 24/25) disabled by default (r.SinkRaceFix.RepProxy.Enable defaults 0) since on modern builds vanilla uses UFGLightweightBuildableReplicationComponent and the legacy AFGLightweightBuildableRepProxy ran in parallel, competing with the modern reliable-message buffer; opt-in retained for experimentation. v1.4.0 coverage retained: AFGLightweightBuildableSubsystem::NotifyGamestateReceived re-fire when HasReceivedInitialLightweightReplicationData flips; UFGSchematic::CanGiveAccessToSchematic hardened against dangling-null mUnlocks/mSchematicDependencies entries. v1.3.0 coverage retained: Resource Sink BeginPlay null-deref; UFGRecipeManager null queries from build-menu and build-gun dismantle; mIsOnline / RegisterPlayerWithSession gates that fail on dedicated NULL-OSS; aggressive ForceNetUpdate on critical subsystems during join to beat replication starvation; suppression of MOVE_None resets that freeze player movement; suppression of UpdateMovementModeOnRespawn freeze; auto-collapse of stuck respawn-overlay widgets; and the join-completion repair (clears Jump/Hotbar/BuildGun gates and force-flips character-level online state once the controller is possessed and join-critical objects exist). Pure runtime patch — no content, no save impact. Diagnostic logging gated behind r.SinkRaceFix.Trace, default off. Internal module name kept as SinkSubsystemRaceFix for save and version-link continuity.",
 	"Category": "Modding",
 	"CreatedBy": "garward",
 	"CreatedByURL": "",
@@ -30,6 +30,10 @@
 			"Name": "SML",
 			"Enabled": true,
 			"SemVersion": "^3.11.0"
+		},
+		{
+			"Name": "AbstractInstance",
+			"Enabled": true
 		}
 	]
 }

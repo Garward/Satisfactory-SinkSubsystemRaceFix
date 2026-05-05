@@ -1,0 +1,2071 @@
+#include "SinkSubsystemRaceFix.h"
+
+#include "Buildables/FGBuildableResourceSink.h"
+#include "FGResourceSinkSubsystem.h"
+#include "FGSchematic.h"
+#include "FGSchematicManager.h"
+#include "FGRecipeManager.h"
+#include "FGRecipe.h"
+#include "FGCategory.h"
+#include "FGBlueprintFunctionLibrary.h"
+#include "FGGameMode.h"
+#include "FGCharacterPlayer.h"
+#include "FGPlayerController.h"
+#include "FGPlayerState.h"
+#include "FGLocalPlayer.h"
+#include "FGBuildableSubsystem.h"
+#include "FGLightweightBuildableSubsystem.h"
+#include "FGActorRepresentationManager.h"
+#include "FGBlueprintSubsystem.h"
+#include "FGGamePhaseManager.h"
+#include "FGMapManager.h"
+#include "FGConveyorChainSubsystem.h"
+#include "FGConveyorItemSubSystem.h"
+#include "FGConveyorChainActor.h"
+#include "Buildables/FGBuildableConveyorBase.h"
+#include "Creature/FGCreature.h"
+#include "FGItemPickup.h"
+#include "FGItemPickup_Spawnable.h"
+#include "FGLightweightBuildableReplicationComponent.h"
+#include "UI/FGGameUI.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Patching/NativeHookManager.h"
+#include "TimerManager.h"
+#include "Blueprint/UserWidget.h"
+#include "Engine/Engine.h"
+#include "Engine/World.h"
+#include "EngineUtils.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/GameStateBase.h"
+#include "Containers/Ticker.h"
+#include "MoviePlayer.h"
+#include "UObject/UnrealType.h"
+#include "UObject/UObjectIterator.h"
+#include "UObject/ObjectKey.h"
+#include "Engine/GameViewportClient.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Widgets/SWindow.h"
+#include "Widgets/SWidget.h"
+
+DEFINE_LOG_CATEGORY(LogSinkSubsystemRaceFix);
+
+#define MOD_NAME TEXT("SinkSubsystemRaceFix")
+
+// Sink-defer retry budget: 50 * 0.1s = 5s.
+static const int32 SINK_MAX_RETRIES = 50;
+static const float SINK_RETRY_INTERVAL = 0.1f;
+
+namespace
+{
+	template<typename Tag, typename Tag::type Member>
+	struct TPrivateMemberAccess
+	{
+		friend typename Tag::type GetPrivateMember(Tag)
+		{
+			return Member;
+		}
+	};
+
+	struct FFGCharacterPlayerSetOnlineStateTag
+	{
+		using type = void (AFGCharacterPlayer::*)(const bool);
+		friend type GetPrivateMember(FFGCharacterPlayerSetOnlineStateTag);
+	};
+
+	struct FFGCharacterPlayerIsOnlineTag
+	{
+		using type = TOptional<bool> AFGCharacterPlayer::*;
+		friend type GetPrivateMember(FFGCharacterPlayerIsOnlineTag);
+	};
+
+	struct FFGPlayerStateCreateDefaultHotbarsTag
+	{
+		using type = void (AFGPlayerState::*)();
+		friend type GetPrivateMember(FFGPlayerStateCreateDefaultHotbarsTag);
+	};
+
+	struct FFGPlayerStateOnRepPlayerHotbarsTag
+	{
+		using type = void (AFGPlayerState::*)();
+		friend type GetPrivateMember(FFGPlayerStateOnRepPlayerHotbarsTag);
+	};
+
+	struct FFGPlayerStateUpdateActiveHotbarStateTag
+	{
+		using type = void (AFGPlayerState::*)();
+		friend type GetPrivateMember(FFGPlayerStateUpdateActiveHotbarStateTag);
+	};
+
+	struct FFGPlayerControllerHasInitialLightweightDataTag
+	{
+		using type = bool (AFGPlayerController::*)() const;
+		friend type GetPrivateMember(FFGPlayerControllerHasInitialLightweightDataTag);
+	};
+
+	// Direct access to the underlying bool that
+	// AFGPlayerController::HasReceivedInitialLightweightReplicationData() reads.
+	// The component is owned `Within = FGPlayerController` and stores the flag
+	// privately. Flipping it true bypasses replication starvation and lets the
+	// welcome-back splash / UI completion path fire on heavy-mod saves.
+	struct FFGLightweightRepCompReceivedInitialTag
+	{
+		using type = bool UFGLightweightBuildableReplicationComponent::*;
+		friend type GetPrivateMember(FFGLightweightRepCompReceivedInitialTag);
+	};
+
+	template struct TPrivateMemberAccess<FFGCharacterPlayerSetOnlineStateTag, &AFGCharacterPlayer::SetOnlineState>;
+	template struct TPrivateMemberAccess<FFGCharacterPlayerIsOnlineTag, &AFGCharacterPlayer::mIsPlayerOnline>;
+	template struct TPrivateMemberAccess<FFGPlayerStateCreateDefaultHotbarsTag, &AFGPlayerState::CreateDefaultHotbars>;
+	template struct TPrivateMemberAccess<FFGPlayerStateOnRepPlayerHotbarsTag, &AFGPlayerState::OnRep_PlayerHotbars>;
+	template struct TPrivateMemberAccess<FFGPlayerStateUpdateActiveHotbarStateTag, &AFGPlayerState::UpdateActiveHotbarState>;
+	template struct TPrivateMemberAccess<FFGPlayerControllerHasInitialLightweightDataTag, &AFGPlayerController::HasReceivedInitialLightweightReplicationData>;
+	template struct TPrivateMemberAccess<FFGLightweightRepCompReceivedInitialTag, &UFGLightweightBuildableReplicationComponent::bReceivedInitialReplicationMessage>;
+
+	// =========================================================================
+	// Hook 1: AFGBuildableResourceSink::BeginPlay
+	// Crash: Assertion failed: mResourceSinkSubsystem [FGBuildableResourceSink.cpp:25]
+	// Cause: Sink BeginPlay runs on client before AFGResourceSinkSubsystem has
+	//        replicated. Original code asserts on the null pointer.
+	// Fix:   Cancel original BeginPlay, retry on a 0.1s timer until subsystem
+	//        is non-null or budget exhausted.
+	// =========================================================================
+	void DeferredSinkBeginPlay(TWeakObjectPtr<AFGBuildableResourceSink> WeakSink, int32 Attempt);
+
+	// Pre-populate the sink's UPROPERTY(Transient) cache field so the
+	// `check(mResourceSinkSubsystem)` at FGBuildableResourceSink.cpp:25 passes
+	// even if the original BeginPlay's internal lookup (closed source — likely
+	// a different overload of AFGResourceSinkSubsystem::Get) returns null at
+	// this exact moment in the load sequence.
+	bool PopulateSinkSubsystemField(AFGBuildableResourceSink* Sink, AFGResourceSinkSubsystem* Subsystem)
+	{
+		FProperty* Prop = Sink->GetClass()->FindPropertyByName(TEXT("mResourceSinkSubsystem"));
+		FObjectProperty* ObjProp = CastField<FObjectProperty>(Prop);
+		if (ObjProp == nullptr)
+		{
+			UE_LOG(LogSinkSubsystemRaceFix, Error,
+				TEXT("mResourceSinkSubsystem property not found on %s (SDK changed?)"),
+				*Sink->GetClass()->GetName());
+			return false;
+		}
+		ObjProp->SetObjectPropertyValue_InContainer(Sink, Subsystem);
+		return true;
+	}
+
+	void TrySinkBeginPlayAgain(TWeakObjectPtr<AFGBuildableResourceSink> WeakSink, int32 Attempt)
+	{
+		AFGBuildableResourceSink* Sink = WeakSink.Get();
+		if (!IsValid(Sink))
+		{
+			return;
+		}
+
+		UWorld* World = Sink->GetWorld();
+		if (!IsValid(World))
+		{
+			return;
+		}
+
+		AFGResourceSinkSubsystem* Subsystem = AFGResourceSinkSubsystem::Get(World);
+		if (Subsystem != nullptr)
+		{
+			UE_LOG(LogSinkSubsystemRaceFix, Display,
+				TEXT("ResourceSinkSubsystem ready after %d retries; running deferred BeginPlay on %s"),
+				Attempt, *Sink->GetName());
+			PopulateSinkSubsystemField(Sink, Subsystem);
+			Sink->BeginPlay();
+			return;
+		}
+
+		if (Attempt >= SINK_MAX_RETRIES)
+		{
+			UE_LOG(LogSinkSubsystemRaceFix, Error,
+				TEXT("ResourceSinkSubsystem still null after %d retries; running BeginPlay anyway on %s ")
+				TEXT("(this will likely assert — investigate why subsystem never replicated)"),
+				SINK_MAX_RETRIES, *Sink->GetName());
+			Sink->BeginPlay();
+			return;
+		}
+
+		DeferredSinkBeginPlay(WeakSink, Attempt + 1);
+	}
+
+	void DeferredSinkBeginPlay(TWeakObjectPtr<AFGBuildableResourceSink> WeakSink, int32 Attempt)
+	{
+		AFGBuildableResourceSink* Sink = WeakSink.Get();
+		if (!IsValid(Sink))
+		{
+			return;
+		}
+
+		UWorld* World = Sink->GetWorld();
+		if (!IsValid(World))
+		{
+			return;
+		}
+
+		FTimerHandle Handle;
+		World->GetTimerManager().SetTimer(
+			Handle,
+			FTimerDelegate::CreateLambda([WeakSink, Attempt]()
+			{
+				TrySinkBeginPlayAgain(WeakSink, Attempt);
+			}),
+			SINK_RETRY_INTERVAL,
+			false);
+	}
+
+	void InstallSinkHook()
+	{
+		SUBSCRIBE_UOBJECT_METHOD(AFGBuildableResourceSink, BeginPlay,
+			[](auto& Scope, AFGBuildableResourceSink* Self)
+			{
+				if (!IsValid(Self))
+				{
+					return;
+				}
+
+				// Server-authority path: subsystem always exists locally on the host.
+				if (Self->HasAuthority())
+				{
+					return;
+				}
+
+				UWorld* World = Self->GetWorld();
+				if (!IsValid(World))
+				{
+					return;
+				}
+
+				AFGResourceSinkSubsystem* Subsystem = AFGResourceSinkSubsystem::Get(World);
+				if (Subsystem != nullptr)
+				{
+					// World subsystem exists, but the sink's local cache field
+					// might still be null when original BeginPlay runs its own
+					// lookup. Pre-populate so the line-25 assertion passes.
+					PopulateSinkSubsystemField(Self, Subsystem);
+					return;
+				}
+
+				UE_LOG(LogSinkSubsystemRaceFix, Display,
+					TEXT("Deferring AFGBuildableResourceSink::BeginPlay on %s (subsystem not ready)"),
+					*Self->GetName());
+
+				Scope.Cancel();
+				DeferredSinkBeginPlay(TWeakObjectPtr<AFGBuildableResourceSink>(Self), 1);
+			});
+	}
+
+	// =========================================================================
+	// Hook 2: UFGSchematic::CanGiveAccessToSchematic
+	// Crash: EXCEPTION_ACCESS_VIOLATION reading 0x2b8 in
+	//        UFGSchematic::CanGiveAccessToSchematic [FGSchematic.cpp:408]
+	// Cause: SML's content registry / mod blueprints (e.g. AdvancedRecipes
+	//        iterating WasteShielding schematics) call this static helper
+	//        during the BeginPlay cascade. The helper looks up
+	//        AFGSchematicManager from the world; on the client it hasn't
+	//        replicated yet and the dereference faults.
+	//        Confirmed in log immediately before crash:
+	//          LogMAMTips: Warning: Schematic Manager not Replicated yet.
+	// Fix:   Short-circuit the call to return false when the manager is
+	//        not yet available. "Player can't access yet" is the safe answer
+	//        during the replication window — same effect as the schematic
+	//        being locked, which all callers already handle.
+	//
+	// SIGNATURE NOTE: CSS UE 5.3 declares this as a static UFUNCTION. The
+	// expected signature is:
+	//     static bool UFGSchematic::CanGiveAccessToSchematic(
+	//         UObject* worldContext, TSubclassOf<UFGSchematic> inSchematic);
+	// If your headers show a different parameter order or set, adjust the
+	// lambda parameter list to match. The hook macro infers the signature
+	// from the function pointer, so a mismatch will surface as a compile
+	// error in the lambda, not at runtime.
+	// =========================================================================
+	void InstallSchematicHook()
+	{
+		SUBSCRIBE_METHOD(UFGSchematic::CanGiveAccessToSchematic,
+			[](auto& Scope, TSubclassOf<UFGSchematic> InSchematic, UObject* WorldContext)
+			{
+				if (!IsValid(WorldContext))
+				{
+					Scope.Override(false);
+					return;
+				}
+
+				UWorld* World = WorldContext->GetWorld();
+				if (!IsValid(World))
+				{
+					Scope.Override(false);
+					return;
+				}
+
+				AFGSchematicManager* Manager = AFGSchematicManager::Get(World);
+				if (IsValid(Manager))
+				{
+					return;
+				}
+
+				UE_LOG(LogSinkSubsystemRaceFix, Display,
+					TEXT("Short-circuiting UFGSchematic::CanGiveAccessToSchematic ")
+					TEXT("(SchematicManager not replicated yet); returning false"));
+
+				Scope.Override(false);
+			});
+	}
+
+	// =========================================================================
+	// Hook 3: AFGPlayerState::BeginPlay (server-only)
+	// Symptom: Client connects, server logs
+	//   "RegisterPlayerWithSession: Failed- UniqueId.IsValid(): true,
+	//    IsV2(): true, IsOnline: false"
+	//   followed by infinite-load on client (SchematicManager never replicates).
+	// Cause:   Dedicated server build strips OnlineSubsystemSteam plugin and
+	//          runs with NULL OSS. When a Steam client connects, the server's
+	//          FUniqueNetIdRepl::IsOnline() returns false because no OSS is
+	//          registered to validate the Steam-typed UniqueID. The check in
+	//          AFGPlayerState::RegisterPlayerWithSession early-returns and
+	//          leaves AFGPlayerState::mIsOnline = false. Subsystems gated on
+	//          mIsOnline (including SchematicManager replication) skip this
+	//          player => permanent hang.
+	// Fix:     After AFGPlayerState::BeginPlay (server-side), force mIsOnline
+	//          true via reflection and ForceNetUpdate. PlayerState is server-
+	//          authoritative so the value replicates to clients.
+	//
+	// Why this hook target (not PostLogin): Earlier attempt hooked
+	// AFGGameMode::PostLogin AFTER but the hook never fired in practice — the
+	// active GameMode is BP_GameMode_C (Blueprint subclass) and the Blueprint
+	// dispatch path bypasses native AFTER hooks on the C++ parent class.
+	// AFGPlayerState::BeginPlay is a vanilla virtual on the leaf type and
+	// fires reliably on the server.
+	// =========================================================================
+	void DeferredForceOnline(TWeakObjectPtr<AFGPlayerState> WeakPS, int32 Attempt);
+
+	// Hook 12 retry helper. SF's PS->SetOnlineState(true) early-returns when
+	// the PS hasn't cached its character yet ("Failed 1: false, false" log).
+	// Retry every ~1s for ~10 attempts; after the character spawns, the call
+	// will actually take effect and flip the master gating flag.
+	static const int32 ONLINE_RETRY_MAX = 10;
+	static const float ONLINE_RETRY_INTERVAL = 1.0f;
+
+	void ScheduleOnlineStateRetries(TWeakObjectPtr<AFGPlayerState> WeakPS, int32 Attempt)
+	{
+		AFGPlayerState* PS = WeakPS.Get();
+		if (!IsValid(PS)) return;
+		UWorld* World = PS->GetWorld();
+		if (!IsValid(World)) return;
+		if (Attempt > ONLINE_RETRY_MAX) return;
+
+		FTimerHandle Handle;
+		World->GetTimerManager().SetTimer(
+			Handle,
+			FTimerDelegate::CreateLambda([WeakPS, Attempt]()
+			{
+				AFGPlayerState* InnerPS = WeakPS.Get();
+				if (!IsValid(InnerPS)) return;
+				if (InnerPS->GetLocalRole() != ROLE_Authority) return;
+				InnerPS->SetOnlineState(true);
+				UE_LOG(LogSinkSubsystemRaceFix, Display,
+					TEXT("Hook 12: retry %d/%d SetOnlineState(true) on %s"),
+					Attempt, ONLINE_RETRY_MAX, *InnerPS->GetName());
+				ScheduleOnlineStateRetries(WeakPS, Attempt + 1);
+			}),
+			ONLINE_RETRY_INTERVAL,
+			false);
+	}
+
+	void TryForceOnline(TWeakObjectPtr<AFGPlayerState> WeakPS, int32 Attempt)
+	{
+		AFGPlayerState* PS = WeakPS.Get();
+		if (!IsValid(PS))
+		{
+			return;
+		}
+
+		// Only the server should be writing to PlayerState fields.
+		if (PS->GetLocalRole() != ROLE_Authority)
+		{
+			return;
+		}
+
+		FProperty* Prop = PS->GetClass()->FindPropertyByName(TEXT("mIsOnline"));
+		FBoolProperty* BoolProp = CastField<FBoolProperty>(Prop);
+		if (BoolProp == nullptr)
+		{
+			UE_LOG(LogSinkSubsystemRaceFix, Error,
+				TEXT("ForceOnline: mIsOnline property not found on %s (SDK changed?); skipping"),
+				*PS->GetClass()->GetName());
+			return;
+		}
+
+		const bool bWas = BoolProp->GetPropertyValue_InContainer(PS);
+		if (bWas)
+		{
+			// Already true — vanilla path worked, nothing to fix.
+			return;
+		}
+
+		BoolProp->SetPropertyValue_InContainer(PS, true);
+		PS->ForceNetUpdate();
+
+		UE_LOG(LogSinkSubsystemRaceFix, Display,
+			TEXT("Forced mIsOnline=true on %s (attempt %d) — bypassing ")
+			TEXT("RegisterPlayerWithSession IsOnline:false on dedicated NULL-OSS server"),
+			*PS->GetName(), Attempt);
+	}
+
+	void DeferredForceOnline(TWeakObjectPtr<AFGPlayerState> WeakPS, int32 Attempt)
+	{
+		AFGPlayerState* PS = WeakPS.Get();
+		if (!IsValid(PS))
+		{
+			return;
+		}
+		UWorld* World = PS->GetWorld();
+		if (!IsValid(World))
+		{
+			return;
+		}
+		FTimerHandle Handle;
+		World->GetTimerManager().SetTimer(
+			Handle,
+			FTimerDelegate::CreateLambda([WeakPS, Attempt]()
+			{
+				TryForceOnline(WeakPS, Attempt);
+			}),
+			0.1f,
+			false);
+	}
+
+	void InstallPlayerStateBeginPlayHook()
+	{
+		SUBSCRIBE_UOBJECT_METHOD_AFTER(AFGPlayerState, BeginPlay,
+			[](AFGPlayerState* Self)
+			{
+				if (!IsValid(Self))
+				{
+					return;
+				}
+				// Server-only — clients shouldn't write authoritative state.
+				if (Self->GetLocalRole() != ROLE_Authority)
+				{
+					return;
+				}
+
+				UE_LOG(LogSinkSubsystemRaceFix, Display,
+					TEXT("AFGPlayerState::BeginPlay fired for %s — scheduling force-online"),
+					*Self->GetName());
+
+				// First attempt immediately, plus a short defer in case
+				// RegisterPlayerWithSession is called slightly later and
+				// resets mIsOnline.
+				TryForceOnline(TWeakObjectPtr<AFGPlayerState>(Self), 1);
+				DeferredForceOnline(TWeakObjectPtr<AFGPlayerState>(Self), 2);
+
+				// Hook 12: single-shot flip of the public master switch on
+				// the PlayerState. Earlier retry-based version repeatedly
+				// triggered SF's online-state-change side effects (likely
+				// re-running RegisterPlayerWithSession or kicking) which
+				// caused the connection to drop. One call is safer; if it
+				// doesn't take effect immediately we accept the limitation.
+				Self->SetOnlineState(true);
+				UE_LOG(LogSinkSubsystemRaceFix, Display,
+					TEXT("Hook 12: forced AFGPlayerState::SetOnlineState(true) on %s (single-shot)"),
+					*Self->GetName());
+			});
+	}
+
+	// =========================================================================
+	// Hook 4: AFGPlayerState::RegisterPlayerWithSession (server-only)
+	// Symptom: After Hook 3 forced mIsOnline=true, the IsOnline:false rejection
+	//          stops firing, but a second SF gate still trips:
+	//            "RegisterPlayerWithSession: LocalUser was Invalid."
+	//          ULocalUserInfo is part of CSS's OnlineIntegration plugin and
+	//          isn't created for connecting players when the dedicated server
+	//          is using the NULL OSS — so this validation can never pass on
+	//          dedicated, by structural design of the build.
+	// Fix:     Cancel SF's whole RegisterPlayerWithSession override BEFORE it
+	//          runs. The function appears to be a guard wrapper — it logs the
+	//          two failure modes (UniqueId/IsOnline gate, LocalUser gate) and
+	//          then proceeds to per-player setup that the dedicated server
+	//          path doesn't actually need. Skipping it lets the rest of the
+	//          login chain (PlayerController replication, RCO creation, etc.)
+	//          proceed unblocked. As a safety, force mIsOnline=true here too
+	//          in case Hook 3's BeginPlay fire didn't catch this PlayerState.
+	// =========================================================================
+	// =========================================================================
+	// Hook 5: AFGSchematicManager::GetAvailableSchematicsOfTypes (AFTER)
+	// Crash:   EXCEPTION_ACCESS_VIOLATION reading 0x0, observed when opening
+	//          the HUB Terminal's "home shop" / learning-stage UI on a save
+	//          that has stale schematic class references (mod removed/renamed
+	//          its schematic asset; the save still has a TSubclassOf<UFGSchematic>
+	//          that resolves to null at load).
+	// Pattern: log immediately preceding the AV
+	//            LogGame: Warning: GetRemainingCostFor failed, schematic was null.
+	//            LogGame: Warning: FGSchematic::GetCost: class was nullpeter.
+	//          Then UI iteration dereferences the null entry → AV at 0x0.
+	// Fix:     Filter null entries out of the output array before any caller
+	//          gets to iterate it. Eliminates the null-deref bug class at
+	//          source, so all downstream paths (cost lookup, name display,
+	//          dependency check) become safe — not just GetCost.
+	// =========================================================================
+	// =========================================================================
+	// Hook 6: Subsystem replication kick (server-only)
+	// Symptom: On heavily-modded saves with lots of placed content, the server
+	//          opens 500+ actor channels for incoming connections (powerlines,
+	//          buildables, creatures) but NEVER replicates the AlwaysRelevant
+	//          subsystems (AFGSchematicManager, AFGResourceSinkSubsystem,
+	//          AFGGameState). Client's Get(World) lookups stay null forever
+	//          and the loading screen never completes. Confirmed from logs:
+	//          server outgoing actor traffic for the joining connection
+	//          consists almost entirely of buildables and PlayerController,
+	//          with zero "Actor schematicManager" / "Actor BP_GameState_C"
+	//          entries even after 47s of connection.
+	// Cause:   Mostly speculative. Likely a combination of:
+	//            (a) the rep graph filtering subsystems via streaming-level
+	//                relevance checks while the client is still loading cells,
+	//            (b) PlayerController's bloated initial state (mod-injected
+	//                replicated arrays) gating subsequent actor processing.
+	// Fix:     For each PlayerState BeginPlay (server), bump the 3 subsystems'
+	//          NetUpdateFrequency to 100 Hz and ForceNetUpdate() repeatedly
+	//          for 30s, giving the replication scheduler many extra chances
+	//          to push them to the client.
+	// =========================================================================
+	static const int32 KICK_TICKS = 60;       // 60 * 0.5s = 30s
+	static const float KICK_INTERVAL = 0.5f;
+
+	// Conveyor on-join wake. Was a 5-minute always-on maintenance pass; that
+	// shape didn't match the architecture (event-driven during gameplay), so
+	// it's now a bounded burst:
+	//   On join: 15 ticks @ 1.0s = 15s of aggressive ForceNetUpdate on every
+	//            AFGConveyorChainActor + brief subsystem freq elevation.
+	//   During gameplay: nothing — natural replication handles ongoing item
+	//                    flow once the client has the chain actors. The
+	//                    passive IsUnusuallyLargeTickDelta → false client
+	//                    override (Hook 14) prevents the client from pausing
+	//                    its conveyor ticking under uneven server deltas.
+	// Defer start by 15s post-PlayerState::BeginPlay so the wake doesn't
+	// compete with the 10s lightweight-rep / welcome-back-splash window.
+	static const int32 CONVEYOR_MAINTENANCE_TICKS = 15;  // 15 * 1.0s = 15s
+	static const float CONVEYOR_MAINTENANCE_INTERVAL = 1.0f;
+	static const float CONVEYOR_MAINTENANCE_START_DELAY = 15.0f;
+	TSet<FObjectKey> GConveyorMaintenanceWorlds;
+
+	void WakeConveyorReplicationActors(UWorld* World, int32 RemainingTicks, bool bIncludeConveyorBuildables)
+	{
+		if (!IsValid(World)) return;
+
+		int32 ChainCount = 0;
+		for (TActorIterator<AFGConveyorChainActor> It(World); It; ++It)
+		{
+			AFGConveyorChainActor* Chain = *It;
+			if (!IsValid(Chain)) continue;
+
+			Chain->NetUpdateFrequency = 100.0f;
+			Chain->MinNetUpdateFrequency = 30.0f;
+			Chain->FlushNetDormancy();
+			Chain->ForceNetUpdate();
+			++ChainCount;
+		}
+
+		int32 ConveyorCount = 0;
+		if (bIncludeConveyorBuildables)
+		{
+			for (TActorIterator<AFGBuildableConveyorBase> It(World); It; ++It)
+			{
+				AFGBuildableConveyorBase* Conveyor = *It;
+				if (!IsValid(Conveyor)) continue;
+
+				Conveyor->NetUpdateFrequency = 100.0f;
+				Conveyor->MinNetUpdateFrequency = 30.0f;
+				Conveyor->FlushNetDormancy();
+				Conveyor->ForceNetUpdate();
+				++ConveyorCount;
+			}
+		}
+
+		if ((RemainingTicks % 10) == 0)
+		{
+			UE_LOG(LogSinkSubsystemRaceFix, Display,
+				TEXT("Hook 6: woke conveyor replication actors chains=%d conveyors=%d remainingTicks=%d"),
+				ChainCount, ConveyorCount, RemainingTicks);
+		}
+	}
+
+	void MaintainConveyorReplication(TWeakObjectPtr<UWorld> WeakWorld, int32 RemainingTicks)
+	{
+		UWorld* World = WeakWorld.Get();
+		if (!IsValid(World)) return;
+
+		if (AFGConveyorChainSubsystem* ConveyorChains = AFGConveyorChainSubsystem::Get(World))
+		{
+			ConveyorChains->NetUpdateFrequency = 1000.0f;
+			ConveyorChains->MinNetUpdateFrequency = 100.0f;
+			ConveyorChains->SetActorTickEnabled(true);
+			ConveyorChains->ForceNetUpdate();
+		}
+
+		if (AFGConveyorItemSubsystem* ConveyorItems = AFGConveyorItemSubsystem::Get(World))
+		{
+			ConveyorItems->SetActorTickEnabled(true);
+			ConveyorItems->ForceNetUpdate();
+		}
+
+		WakeConveyorReplicationActors(World, RemainingTicks, false);
+
+		if (RemainingTicks <= 1)
+		{
+			GConveyorMaintenanceWorlds.Remove(FObjectKey(World));
+			return;
+		}
+
+		FTimerHandle Handle;
+		World->GetTimerManager().SetTimer(
+			Handle,
+			FTimerDelegate::CreateLambda([WeakWorld, RemainingTicks]()
+			{
+				MaintainConveyorReplication(WeakWorld, RemainingTicks - 1);
+			}),
+			CONVEYOR_MAINTENANCE_INTERVAL,
+			false);
+	}
+
+	void StartConveyorMaintenance(UWorld* World)
+	{
+		if (!IsValid(World)) return;
+
+		const FObjectKey WorldKey(World);
+		if (GConveyorMaintenanceWorlds.Contains(WorldKey)) return;
+
+		// Reserve the slot up-front so concurrent joins don't queue duplicate
+		// deferred timers; the timer below releases the slot if the world dies
+		// before it fires.
+		GConveyorMaintenanceWorlds.Add(WorldKey);
+		UE_LOG(LogSinkSubsystemRaceFix, Display,
+			TEXT("Hook 6: deferring conveyor on-join wake by %.1fs ")
+			TEXT("(then %d ticks @ %.1fs interval, total %.1fs) to let welcome-back splash fire first"),
+			CONVEYOR_MAINTENANCE_START_DELAY, CONVEYOR_MAINTENANCE_TICKS,
+			CONVEYOR_MAINTENANCE_INTERVAL,
+			CONVEYOR_MAINTENANCE_TICKS * CONVEYOR_MAINTENANCE_INTERVAL);
+
+		FTimerHandle Handle;
+		World->GetTimerManager().SetTimer(
+			Handle,
+			FTimerDelegate::CreateLambda([WeakWorld = TWeakObjectPtr<UWorld>(World), WorldKey]()
+			{
+				UWorld* W = WeakWorld.Get();
+				if (!IsValid(W))
+				{
+					GConveyorMaintenanceWorlds.Remove(WorldKey);
+					return;
+				}
+				UE_LOG(LogSinkSubsystemRaceFix, Display,
+					TEXT("Hook 6: deferred timer fired — starting conveyor on-join wake now (one-shot, not periodic)"));
+				MaintainConveyorReplication(WeakWorld, CONVEYOR_MAINTENANCE_TICKS);
+			}),
+			CONVEYOR_MAINTENANCE_START_DELAY,
+			false);
+	}
+
+	// Time to wait between waking a pickup and putting it back to dormant.
+	// Long enough for the initial replication burst to land on all clients,
+	// short enough that we don't burn bandwidth re-replicating a static actor.
+	static const float PICKUP_DORMANT_DELAY = 2.0f;
+
+	void ForceWakeItemPickup(AFGItemPickup* Pickup)
+	{
+		if (!IsValid(Pickup)) return;
+		if (!Pickup->HasAuthority()) return;
+
+		// Brief wake-and-replicate window. NetUpdateFrequency is elevated only
+		// for these few seconds; once the actor is dormant, frequency is moot
+		// because UE skips replication entirely until something flushes the
+		// dormancy.
+		Pickup->NetUpdateFrequency = 30.0f;
+		Pickup->MinNetUpdateFrequency = 10.0f;
+		Pickup->FlushNetDormancy();
+		Pickup->ForceNetUpdate();
+
+		// Schedule transition back to fully dormant after the rep burst lands.
+		// Pickups are nearly stateless once spawned (exist or destroyed); going
+		// dormant means the server stops trying to replicate them every tick,
+		// which is the bandwidth-bounded behavior we want for a heavy-mod save.
+		// Channel close on Destroy() naturally re-replicates without us needing
+		// to flush dormancy ourselves.
+		UWorld* World = Pickup->GetWorld();
+		if (!IsValid(World)) return;
+
+		FTimerHandle Handle;
+		World->GetTimerManager().SetTimer(
+			Handle,
+			FTimerDelegate::CreateLambda([WeakPickup = TWeakObjectPtr<AFGItemPickup>(Pickup)]()
+			{
+				AFGItemPickup* P = WeakPickup.Get();
+				if (!IsValid(P)) return;
+				if (!P->HasAuthority()) return;
+				P->SetNetDormancy(DORM_DormantAll);
+			}),
+			PICKUP_DORMANT_DELAY,
+			false);
+	}
+
+	void KickSubsystemReplication(TWeakObjectPtr<UWorld> WeakWorld, int32 RemainingTicks)
+	{
+		UWorld* World = WeakWorld.Get();
+		if (!IsValid(World)) return;
+
+		AFGSchematicManager*      SchemMgr = AFGSchematicManager::Get(World);
+		AFGResourceSinkSubsystem* Sink     = AFGResourceSinkSubsystem::Get(World);
+		AGameStateBase*           GS       = World->GetGameState();
+		AFGRecipeManager*         Recipe   = AFGRecipeManager::Get(World);
+		AFGBuildableSubsystem*    Buildable = AFGBuildableSubsystem::Get(World);
+		AFGLightweightBuildableSubsystem* Lightweight = AFGLightweightBuildableSubsystem::Get(World);
+		AFGActorRepresentationManager* Repr = AFGActorRepresentationManager::Get(World);
+		AFGBlueprintSubsystem* Blueprint = AFGBlueprintSubsystem::Get(World);
+		AFGGamePhaseManager* GamePhase = AFGGamePhaseManager::Get(World);
+		AFGMapManager* MapManager = AFGMapManager::Get(World);
+		AFGConveyorChainSubsystem* ConveyorChains = AFGConveyorChainSubsystem::Get(World);
+		AFGConveyorItemSubsystem* ConveyorItems = AFGConveyorItemSubsystem::Get(World);
+
+		auto Bump = [](AActor* A)
+		{
+			if (!IsValid(A)) return;
+			A->NetUpdateFrequency = 100.0f;
+			A->ForceNetUpdate();
+		};
+		Bump(SchemMgr);
+		Bump(Sink);
+		Bump(GS);
+		Bump(Recipe);
+		Bump(Buildable);
+		Bump(Lightweight);
+		Bump(Repr);
+		Bump(Blueprint);
+		Bump(GamePhase);
+		Bump(MapManager);
+		Bump(ConveyorChains);
+		Bump(ConveyorItems);
+
+		if ((RemainingTicks % 4) == 0)
+		{
+			WakeConveyorReplicationActors(World, RemainingTicks, true);
+		}
+
+		if (RemainingTicks <= 1) return;
+
+		FTimerHandle Handle;
+		World->GetTimerManager().SetTimer(
+			Handle,
+			FTimerDelegate::CreateLambda([WeakWorld, RemainingTicks]()
+			{
+				KickSubsystemReplication(WeakWorld, RemainingTicks - 1);
+			}),
+			KICK_INTERVAL,
+			false);
+	}
+
+	// =========================================================================
+	// Hook 8: UFGBlueprintFunctionLibrary::GetAvailableRecipesInCategory (BEFORE)
+	//         + GetAvailableSubCategoriesForCategory (BEFORE)
+	// Crash:  Assertion failed: recipeManager [FGBlueprintFunctionLibrary.cpp:1185]
+	//         When the player opens the build gun on a freshly-joined client,
+	//         AFGBuildGun::Equip → BP UI construction → BP_BuildMenu calls
+	//         GetAvailableRecipesInCategory which dereferences AFGRecipeManager.
+	//         If RecipeManager hasn't replicated yet (race window during the
+	//         first second after join), the assert fires.
+	// Fix:    Same pattern as Hook 2 (CanGiveAccessToSchematic). Cancel/override
+	//         the call when RecipeManager is null. The build menu will show
+	//         no recipes for ~1 second until replication catches up, then
+	//         render normally — same effect as the schematic short-circuit.
+	// =========================================================================
+	void InstallRecipeManagerNullHook()
+	{
+		SUBSCRIBE_METHOD(UFGBlueprintFunctionLibrary::GetAvailableRecipesInCategory,
+			[](auto& Scope, UObject* WorldContext, TSubclassOf<UFGCategory> /*Category*/,
+			   TArray<TSubclassOf<UFGRecipe>>& OutRecipes)
+			{
+				if (!IsValid(WorldContext))
+				{
+					OutRecipes.Reset();
+					Scope.Cancel();
+					return;
+				}
+				UWorld* World = WorldContext->GetWorld();
+				if (!IsValid(World))
+				{
+					OutRecipes.Reset();
+					Scope.Cancel();
+					return;
+				}
+				AFGRecipeManager* Mgr = AFGRecipeManager::Get(World);
+				if (IsValid(Mgr))
+				{
+					return;
+				}
+				UE_LOG(LogSinkSubsystemRaceFix, Display,
+					TEXT("Short-circuiting GetAvailableRecipesInCategory ")
+					TEXT("(RecipeManager not replicated yet); returning empty"));
+				OutRecipes.Reset();
+				Scope.Cancel();
+			});
+
+		SUBSCRIBE_METHOD(UFGBlueprintFunctionLibrary::GetAvailableSubCategoriesForCategory,
+			[](auto& Scope, UObject* WorldContext, TSubclassOf<UFGCategory> /*Category*/,
+			   TSubclassOf<UFGCategory> /*OutputSubCategoryClass*/)
+			{
+				if (!IsValid(WorldContext))
+				{
+					Scope.Override(TArray<TSubclassOf<UFGCategory>>());
+					return;
+				}
+				UWorld* World = WorldContext->GetWorld();
+				if (!IsValid(World))
+				{
+					Scope.Override(TArray<TSubclassOf<UFGCategory>>());
+					return;
+				}
+				AFGRecipeManager* Mgr = AFGRecipeManager::Get(World);
+				if (IsValid(Mgr))
+				{
+					return;
+				}
+				UE_LOG(LogSinkSubsystemRaceFix, Display,
+					TEXT("Short-circuiting GetAvailableSubCategoriesForCategory ")
+					TEXT("(RecipeManager not replicated yet); returning empty"));
+				Scope.Override(TArray<TSubclassOf<UFGCategory>>());
+			});
+
+		SUBSCRIBE_METHOD(UFGBlueprintFunctionLibrary::GetAvailableRecipesInSubCategory,
+			[](auto& Scope, UObject* WorldContext, TSubclassOf<UFGCategory> /*Category*/,
+			   TSubclassOf<UFGCategory> /*SubCategory*/, TArray<TSubclassOf<UFGRecipe>>& OutRecipes)
+			{
+				if (!IsValid(WorldContext) || !IsValid(WorldContext->GetWorld()) ||
+					!IsValid(AFGRecipeManager::Get(WorldContext->GetWorld())))
+				{
+					UE_LOG(LogSinkSubsystemRaceFix, Display,
+						TEXT("Short-circuiting GetAvailableRecipesInSubCategory ")
+						TEXT("(RecipeManager not replicated yet); returning empty"));
+					OutRecipes.Reset();
+					Scope.Cancel();
+				}
+			});
+
+		SUBSCRIBE_METHOD(UFGBlueprintFunctionLibrary::GetAvailableRecipesWithDefaultMaterialInSubCategory,
+			[](auto& Scope, APlayerController* PlayerController, TSubclassOf<UFGCategory> /*Category*/,
+			   TSubclassOf<UFGCategory> /*SubCategory*/, TArray<TSubclassOf<UFGRecipe>>& OutRecipes)
+			{
+				if (!IsValid(PlayerController) || !IsValid(PlayerController->GetWorld()) ||
+					!IsValid(AFGRecipeManager::Get(PlayerController->GetWorld())))
+				{
+					UE_LOG(LogSinkSubsystemRaceFix, Display,
+						TEXT("Short-circuiting GetAvailableRecipesWithDefaultMaterialInSubCategory ")
+						TEXT("(RecipeManager not replicated yet); returning empty"));
+					OutRecipes.Reset();
+					Scope.Cancel();
+				}
+			});
+
+		SUBSCRIBE_METHOD(UFGBlueprintFunctionLibrary::GetAvailableRecipesForMaterialDescriptorInSubCategory,
+			[](auto& Scope, APlayerController* PlayerController, TSubclassOf<UFGCategory> /*Category*/,
+			   TSubclassOf<UFGCategory> /*SubCategory*/,
+			   TSubclassOf<class UFGFactoryCustomizationDescriptor_Material> /*MaterialDesc*/,
+			   TArray<TSubclassOf<UFGRecipe>>& OutRecipes)
+			{
+				if (!IsValid(PlayerController) || !IsValid(PlayerController->GetWorld()) ||
+					!IsValid(AFGRecipeManager::Get(PlayerController->GetWorld())))
+				{
+					UE_LOG(LogSinkSubsystemRaceFix, Display,
+						TEXT("Short-circuiting GetAvailableRecipesForMaterialDescriptorInSubCategory ")
+						TEXT("(RecipeManager not replicated yet); returning empty"));
+					OutRecipes.Reset();
+					Scope.Cancel();
+				}
+			});
+
+		// Same race in the dismantle peek path — when the build gun ticks
+		// over a buildable, it queries the recipe manager for customization
+		// recipes via GetCustomizationRecipeFromDesc.  If the manager hasn't
+		// finished replicating its internal data yet (BeginPlay not fired
+		// on the client), it AVs at offset 0x2f8 (uninitialized member).
+		// Use HasActorBegunPlay() as the readiness proxy — once BeginPlay
+		// runs, internal state is populated and normal calls go through.
+		SUBSCRIBE_UOBJECT_METHOD(AFGRecipeManager, GetCustomizationRecipeFromDesc,
+			[](auto& Scope, AFGRecipeManager* Self,
+			   TSubclassOf<class UFGFactoryCustomizationDescriptor> /*Desc*/)
+			{
+				if (!IsValid(Self) || !Self->HasActorBegunPlay())
+				{
+					UE_LOG(LogSinkSubsystemRaceFix, Verbose,
+						TEXT("Short-circuiting AFGRecipeManager::GetCustomizationRecipeFromDesc ")
+						TEXT("(manager not yet initialized); returning empty"));
+					Scope.Override(TSubclassOf<class UFGCustomizationRecipe>());
+					return;
+				}
+			});
+	}
+
+	// =========================================================================
+	// Hook 9: UCharacterMovementComponent::SetMovementMode (BEFORE)
+	// Symptom: After joining, the local player's MovementMode is being set
+	//          back to MOVE_None every tick by some other system (SF's
+	//          "loading-state" code that never properly exits). Our timer-
+	//          based restore in Hook 7 fires at 0.5s but loses the race.
+	//          Also: deleting the floor under a frozen character leaves
+	//          them hovering in mid-air — clear evidence that physics
+	//          itself is disabled, not just movement input.
+	// Fix:     Intercept every SetMovementMode call. If a caller attempts
+	//          to set MOVE_None on the local autonomous-proxy character,
+	//          cancel the call. Other characters and legitimate MOVE_None
+	//          transitions on simulated proxies / non-owned pawns pass
+	//          through normally.
+	// =========================================================================
+	void InstallMovementModeBlockHook()
+	{
+		SUBSCRIBE_UOBJECT_METHOD(UCharacterMovementComponent, SetMovementMode,
+			[](auto& Scope, UCharacterMovementComponent* Self,
+			   EMovementMode NewMovementMode, uint8 /*NewCustomMode*/)
+			{
+				if (!IsValid(Self)) return;
+				ACharacter* Char = Self->GetCharacterOwner();
+				if (!IsValid(Char) || !Char->IsPlayerControlled()) return;
+
+				static int32 LogBudget = 20;
+				if (LogBudget > 0)
+				{
+					LogBudget--;
+					UE_LOG(LogSinkSubsystemRaceFix, Display,
+						TEXT("Hook 9: SetMovementMode(%d) on player %s role=%d"),
+						(int32)NewMovementMode, *Char->GetName(),
+						(int32)Char->GetLocalRole());
+				}
+
+				if (NewMovementMode == MOVE_None)
+				{
+					Scope.Cancel();
+				}
+			});
+
+		// DisableMovement() either calls SetMovementMode(None) (caught above)
+		// or sets MovementMode field directly when CharacterOwner is null.
+		// Hook it BEFORE and cancel for player-owned components.
+		SUBSCRIBE_UOBJECT_METHOD(UCharacterMovementComponent, DisableMovement,
+			[](auto& Scope, UCharacterMovementComponent* Self)
+			{
+				if (!IsValid(Self)) return;
+				ACharacter* Char = Self->GetCharacterOwner();
+				if (!IsValid(Char) || !Char->IsPlayerControlled()) return;
+
+				static int32 LogBudget = 10;
+				if (LogBudget > 0)
+				{
+					LogBudget--;
+					UE_LOG(LogSinkSubsystemRaceFix, Display,
+						TEXT("Hook 9: Blocked DisableMovement() on player %s"),
+						*Char->GetName());
+				}
+				Scope.Cancel();
+			});
+
+		UE_LOG(LogSinkSubsystemRaceFix, Display,
+			TEXT("Hook 9: SetMovementMode + DisableMovement intercepts installed"));
+	}
+
+	// =========================================================================
+	// Hook 10: AFGCharacterPlayer::UpdateMovementModeOnRespawn (BEFORE)
+	// Symptom: After Hook 9 successfully prevents MovementMode from going to
+	//          None, character is STILL frozen — meaning the freeze involves
+	//          more than just MovementMode (probably velocity zeroing, input
+	//          flag, or pawn flag set in the same caller).
+	// Theory:  AFGCharacterPlayer has UpdateMovementModeOnRespawn(bool
+	//          bIsRespawning). When bIsRespawning is true, this function
+	//          does the whole "freeze player for respawn animation" — sets
+	//          MovementMode to None AND probably sets other state. The
+	//          dismissal flag is broken on this save so it stays true.
+	// Fix:     Cancel the call when bIsRespawning is true on a player
+	//          character. The character stays in normal Walking state.
+	// =========================================================================
+	void InstallRespawnFreezeBlockHook()
+	{
+		SUBSCRIBE_UOBJECT_METHOD(AFGCharacterPlayer, UpdateMovementModeOnRespawn,
+			[](auto& Scope, AFGCharacterPlayer* Self, bool bIsRespawning)
+			{
+				static int32 LogBudget = 20;
+				if (LogBudget > 0)
+				{
+					LogBudget--;
+					UE_LOG(LogSinkSubsystemRaceFix, Display,
+						TEXT("Hook 10: UpdateMovementModeOnRespawn(bIsRespawning=%d) on %s role=%d"),
+						(int32)bIsRespawning,
+						IsValid(Self) ? *Self->GetName() : TEXT("<null>"),
+						IsValid(Self) ? (int32)Self->GetLocalRole() : -1);
+				}
+				if (bIsRespawning && IsValid(Self))
+				{
+					Scope.Cancel();
+				}
+			});
+
+		UE_LOG(LogSinkSubsystemRaceFix, Display,
+			TEXT("Hook 10: respawn-freeze intercept installed"));
+	}
+
+	// =========================================================================
+	// Hook 12: AFGPlayerState::SetOnlineState (BEFORE) + force-call AFTER BeginPlay
+	// AFGPlayerState (NOT AFGCharacterPlayer) has a PUBLIC SetOnlineState.
+	// SF's flow that logs "Set Online State For Player : false" is on this
+	// outer wrapper — fails when GameSession is invalid (NULL OSS dedicated).
+	// Pattern from Th3Fanbus's FixClientResourceSinkPoints: re-do the setup
+	// the engine skipped because of a broken precondition.
+	//
+	//   (a) Intercept SetOnlineState(false) — cancel; SF's transient false-set
+	//       due to invalid session no longer flips the flag off.
+	//   (b) After AFGPlayerState BeginPlay (server side) and again when our
+	//       Hook 4 cancel fires, manually call SetOnlineState(true) so the
+	//       flag is set even if SF's normal path never reached it.
+	// =========================================================================
+	void InstallOnlineStateHook()
+	{
+		SUBSCRIBE_UOBJECT_METHOD(AFGPlayerState, SetOnlineState,
+			[](auto& Scope, AFGPlayerState* Self, bool isPlayerOnline)
+			{
+				if (!IsValid(Self)) return;
+				static int32 LogBudget = 30;
+				if (LogBudget > 0)
+				{
+					LogBudget--;
+					UE_LOG(LogSinkSubsystemRaceFix, Display,
+						TEXT("Hook 12: AFGPlayerState::SetOnlineState(%d) on %s role=%d"),
+						(int32)isPlayerOnline, *Self->GetName(),
+						(int32)Self->GetLocalRole());
+				}
+				if (!isPlayerOnline)
+				{
+					Scope.Cancel();
+				}
+			});
+		UE_LOG(LogSinkSubsystemRaceFix, Display,
+			TEXT("Hook 12: AFGPlayerState::SetOnlineState intercept installed"));
+	}
+
+	// =========================================================================
+	// Hook 13: join/respawn completion repair
+	// Current failure mode after subsystem replication is fixed:
+	//   - Controller exists and action input fires.
+	//   - CharacterMovement is forced back to Walking.
+	//   - WASD/jump/physics/hotbar/build UI stay dead.
+	//
+	// The FactoryGame headers show the real join path is controller respawn /
+	// level-streaming driven, with a character-level online switch:
+	//   AFGPlayerController::NotifyLoadedWorld(...)
+	//   AFGPlayerController::mIsRespawning / mRespawnFromJoin
+	//   AFGCharacterPlayer::SetOnlineState(bool)
+	//   AFGCharacterPlayer::mIsPlayerOnline
+	//
+	// Avoid more AFGPlayerState::SetOnlineState retries. That public wrapper
+	// re-enters session/registration side effects and kicked clients during
+	// testing. Instead, once possession is valid, repair the character-level
+	// active state and clear input gates. Also delay the final loaded-world
+	// notification if the client fires it before the pawn/PS/subsystems exist.
+	// =========================================================================
+	static TSet<TObjectKey<AFGPlayerController>> GDelayedLoadedWorldPending;
+	static TSet<TObjectKey<AFGPlayerController>> GDelayedLoadedWorldReplay;
+	static const int32 LOADED_WORLD_DELAY_MAX_ATTEMPTS = 30;
+	static const float LOADED_WORLD_DELAY_INTERVAL = 0.5f;
+
+	AFGCharacterPlayer* GetFGCharacterFromController(AFGPlayerController* PC)
+	{
+		return IsValid(PC) ? Cast<AFGCharacterPlayer>(PC->GetPawn()) : nullptr;
+	}
+
+	bool AreJoinCriticalObjectsReady(AFGPlayerController* PC)
+	{
+		if (!IsValid(PC)) return false;
+		UWorld* World = PC->GetWorld();
+		if (!IsValid(World)) return false;
+		if (!IsValid(World->GetGameState())) return false;
+		if (!IsValid(PC->PlayerState)) return false;
+		if (!IsValid(GetFGCharacterFromController(PC))) return false;
+		if (!IsValid(AFGSchematicManager::Get(World))) return false;
+		if (!IsValid(AFGResourceSinkSubsystem::Get(World))) return false;
+		if (!IsValid(AFGRecipeManager::Get(World))) return false;
+		if (!IsValid(AFGBuildableSubsystem::Get(World))) return false;
+		if (!IsValid(AFGLightweightBuildableSubsystem::Get(World))) return false;
+		if (!IsValid(AFGActorRepresentationManager::Get(World))) return false;
+		if (!IsValid(AFGMapManager::Get(World))) return false;
+		if (!IsValid(AFGConveyorChainSubsystem::Get(World))) return false;
+		if (!IsValid(AFGConveyorItemSubsystem::Get(World))) return false;
+		auto HasInitialLightweightDataFn = GetPrivateMember(FFGPlayerControllerHasInitialLightweightDataTag{});
+		if (!(PC->*HasInitialLightweightDataFn)()) return false;
+		return true;
+	}
+
+	bool GetCharacterOnline(const AFGCharacterPlayer* Char)
+	{
+		if (!IsValid(Char)) return false;
+		auto IsOnlineMember = GetPrivateMember(FFGCharacterPlayerIsOnlineTag{});
+		const TOptional<bool>& Online = Char->*IsOnlineMember;
+		return Online.IsSet() ? Online.GetValue() : false;
+	}
+
+	void RepairPlayerStateHotbars(AFGPlayerState* PS, const TCHAR* Reason)
+	{
+		if (!IsValid(PS)) return;
+		if (!PS->HasAuthority()) return;
+		if (PS->GetNumHotbars() > 0 && IsValid(PS->GetActiveHotbar())) return;
+
+		const int32 BeforeNum = PS->GetNumHotbars();
+		const int32 BeforeIndex = PS->GetActiveHotbarIndex();
+
+		auto CreateDefaultHotbarsFn = GetPrivateMember(FFGPlayerStateCreateDefaultHotbarsTag{});
+		auto OnRepPlayerHotbarsFn = GetPrivateMember(FFGPlayerStateOnRepPlayerHotbarsTag{});
+		auto UpdateActiveHotbarStateFn = GetPrivateMember(FFGPlayerStateUpdateActiveHotbarStateTag{});
+
+		(PS->*CreateDefaultHotbarsFn)();
+		if (PS->GetNumHotbars() > 0 && PS->GetActiveHotbarIndex() < 0)
+		{
+			PS->SetHotbarIndex(0);
+		}
+		(PS->*OnRepPlayerHotbarsFn)();
+		(PS->*UpdateActiveHotbarStateFn)();
+		PS->ForceNetUpdate();
+
+		UE_LOG(LogSinkSubsystemRaceFix, Display,
+			TEXT("Hook 13: repaired PlayerState hotbars via %s on %s num %d->%d index %d->%d active=%s"),
+			Reason,
+			*PS->GetName(),
+			BeforeNum,
+			PS->GetNumHotbars(),
+			BeforeIndex,
+			PS->GetActiveHotbarIndex(),
+			IsValid(PS->GetActiveHotbar()) ? TEXT("ok") : TEXT("NULL"));
+	}
+
+	void ForceCharacterOnline(AFGCharacterPlayer* Char, const TCHAR* Reason)
+	{
+		if (!IsValid(Char)) return;
+
+		const bool bWasOnline = GetCharacterOnline(Char);
+
+		auto SetOnlineStateFn = GetPrivateMember(FFGCharacterPlayerSetOnlineStateTag{});
+		(Char->*SetOnlineStateFn)(true);
+
+		// Direct fallback for the specific broken join where the closed-source
+		// function refuses to flip the optional despite valid possession.
+		if (!GetCharacterOnline(Char))
+		{
+			auto IsOnlineMember = GetPrivateMember(FFGCharacterPlayerIsOnlineTag{});
+			Char->*IsOnlineMember = true;
+		}
+
+		const bool bNowOnline = GetCharacterOnline(Char);
+		if (!bWasOnline || !bNowOnline)
+		{
+			UE_LOG(LogSinkSubsystemRaceFix, Display,
+				TEXT("Hook 13: forced character online for %s via %s (was=%d now=%d)"),
+				*Char->GetName(), Reason, (int32)bWasOnline, (int32)bNowOnline);
+		}
+	}
+
+	void ForceActivePlayerState(AFGPlayerController* PC, const TCHAR* Reason)
+	{
+		if (!IsValid(PC)) return;
+		AFGCharacterPlayer* Char = GetFGCharacterFromController(PC);
+		if (!IsValid(Char)) return;
+
+		ForceCharacterOnline(Char, Reason);
+		RepairPlayerStateHotbars(Cast<AFGPlayerState>(PC->PlayerState), Reason);
+
+		// Force the lightweight-rep gate true by writing the flag directly on
+		// the controller's UFGLightweightBuildableReplicationComponent. This
+		// is what AFGPlayerController::HasReceivedInitialLightweightReplicationData()
+		// reads. On heavy-mod saves the flag never naturally flips because of
+		// replication starvation, so the welcome-back splash trigger / UI
+		// completion path never fires. Idempotent — setting true→true is a no-op.
+		if (UFGLightweightBuildableReplicationComponent* RepComp =
+			PC->FindComponentByClass<UFGLightweightBuildableReplicationComponent>())
+		{
+			auto FlagPtr = GetPrivateMember(FFGLightweightRepCompReceivedInitialTag{});
+			if (!(RepComp->*FlagPtr))
+			{
+				RepComp->*FlagPtr = true;
+				UE_LOG(LogSinkSubsystemRaceFix, Display,
+					TEXT("Hook 13: forced bReceivedInitialReplicationMessage=true on %s (welcome-back gate)"),
+					*PC->GetName());
+			}
+		}
+
+		PC->ResetIgnoreInputFlags();
+		PC->SetDisabledInputGate(FDisabledInputGate(false));
+
+		Char->UpdateMovementModeOnRespawn(false);
+		if (UCharacterMovementComponent* CMC = Char->GetCharacterMovement())
+		{
+			CMC->SetComponentTickEnabled(true);
+			CMC->Activate(true);
+			if (CMC->MovementMode == MOVE_None)
+			{
+				CMC->SetMovementMode(MOVE_Walking);
+			}
+		}
+
+		UE_LOG(LogSinkSubsystemRaceFix, Display,
+			TEXT("Hook 13: active-player repair via %s on PC=%s pawn=%s PS=%s IsRespawning=%d online=%d gate[Jump=%d Hotbar=%d BuildGun=%d]"),
+			Reason,
+			*PC->GetName(),
+			*Char->GetName(),
+			IsValid(PC->PlayerState) ? *PC->PlayerState->GetName() : TEXT("<null>"),
+			(int32)PC->IsRespawning(),
+			(int32)GetCharacterOnline(Char),
+			(int32)PC->GetDisabledInputGate().mJump,
+			(int32)PC->GetDisabledInputGate().mHotbar,
+			(int32)PC->GetDisabledInputGate().mBuildGun);
+	}
+
+	void ReplayLoadedWorldWhenReady(TWeakObjectPtr<AFGPlayerController> WeakPC, FName WorldPackageName, bool bIsFinalDest, int32 Attempt)
+	{
+		AFGPlayerController* PC = WeakPC.Get();
+		if (!IsValid(PC)) return;
+
+		UWorld* World = PC->GetWorld();
+		if (!IsValid(World)) return;
+
+		const bool bReady = AreJoinCriticalObjectsReady(PC);
+		if (!bReady && Attempt < LOADED_WORLD_DELAY_MAX_ATTEMPTS)
+		{
+			FTimerHandle Handle;
+			World->GetTimerManager().SetTimer(
+				Handle,
+				FTimerDelegate::CreateLambda([WeakPC, WorldPackageName, bIsFinalDest, Attempt]()
+				{
+					ReplayLoadedWorldWhenReady(WeakPC, WorldPackageName, bIsFinalDest, Attempt + 1);
+				}),
+				LOADED_WORLD_DELAY_INTERVAL,
+				false);
+			return;
+		}
+
+		const TObjectKey<AFGPlayerController> Key(PC);
+		GDelayedLoadedWorldPending.Remove(Key);
+		GDelayedLoadedWorldReplay.Add(Key);
+
+		UE_LOG(LogSinkSubsystemRaceFix, Display,
+			TEXT("Hook 13: replaying NotifyLoadedWorld(%s final=%d) for %s after %.1fs ready=%d"),
+			*WorldPackageName.ToString(),
+			(int32)bIsFinalDest,
+			*PC->GetName(),
+			Attempt * LOADED_WORLD_DELAY_INTERVAL,
+			(int32)bReady);
+
+		PC->NotifyLoadedWorld(WorldPackageName, bIsFinalDest);
+		ForceActivePlayerState(PC, TEXT("DelayedNotifyLoadedWorld"));
+	}
+
+	void InstallJoinCompletionHook()
+	{
+		SUBSCRIBE_UOBJECT_METHOD(AFGPlayerController, NotifyLoadedWorld,
+			[](auto& Scope, AFGPlayerController* Self, FName WorldPackageName, bool bIsFinalDest)
+			{
+				if (!IsValid(Self)) return;
+				UWorld* World = Self->GetWorld();
+				if (!IsValid(World)) return;
+				if (World->GetNetMode() == NM_DedicatedServer) return;
+
+				const TObjectKey<AFGPlayerController> Key(Self);
+				if (GDelayedLoadedWorldReplay.Contains(Key))
+				{
+					GDelayedLoadedWorldReplay.Remove(Key);
+					return;
+				}
+
+				UE_LOG(LogSinkSubsystemRaceFix, Display,
+					TEXT("Hook 13: NotifyLoadedWorld(%s final=%d) on %s ready=%d"),
+					*WorldPackageName.ToString(),
+					(int32)bIsFinalDest,
+					*Self->GetName(),
+					(int32)AreJoinCriticalObjectsReady(Self));
+
+				if (bIsFinalDest && !AreJoinCriticalObjectsReady(Self) && !GDelayedLoadedWorldPending.Contains(Key))
+				{
+					GDelayedLoadedWorldPending.Add(Key);
+					Scope.Cancel();
+					ReplayLoadedWorldWhenReady(TWeakObjectPtr<AFGPlayerController>(Self), WorldPackageName, bIsFinalDest, 0);
+				}
+			});
+
+		SUBSCRIBE_UOBJECT_METHOD_AFTER(AFGPlayerController, NotifyLoadedWorld,
+			[](AFGPlayerController* Self, FName /*WorldPackageName*/, bool bIsFinalDest)
+			{
+				if (bIsFinalDest)
+				{
+					ForceActivePlayerState(Self, TEXT("NotifyLoadedWorldAfter"));
+				}
+			});
+
+		SUBSCRIBE_UOBJECT_METHOD_AFTER(AFGPlayerController, OnPossess,
+			[](AFGPlayerController* Self, APawn* /*Pawn*/)
+			{
+				ForceActivePlayerState(Self, TEXT("OnPossessAfter"));
+			});
+
+		SUBSCRIBE_UOBJECT_METHOD_AFTER(AFGPlayerController, OnRep_PlayerState,
+			[](AFGPlayerController* Self)
+			{
+				ForceActivePlayerState(Self, TEXT("PC_OnRep_PlayerStateAfter"));
+			});
+
+		SUBSCRIBE_UOBJECT_METHOD(AFGPlayerController, SetDisabledInputGate,
+			[](auto& Scope, AFGPlayerController* Self, FDisabledInputGate NewGate)
+			{
+				if (!IsValid(Self)) return;
+				AFGCharacterPlayer* Char = GetFGCharacterFromController(Self);
+				if (!IsValid(Char) || !GetCharacterOnline(Char)) return;
+
+				if (NewGate.mJump || NewGate.mHotbar || NewGate.mBuildGun)
+				{
+					UE_LOG(LogSinkSubsystemRaceFix, Display,
+						TEXT("Hook 13: replacing active-player disabled-input gate on %s (Jump=%d Hotbar=%d BuildGun=%d IsRespawning=%d)"),
+						*Self->GetName(),
+						(int32)NewGate.mJump,
+						(int32)NewGate.mHotbar,
+						(int32)NewGate.mBuildGun,
+						(int32)Self->IsRespawning());
+					Scope.Cancel();
+					Self->SetDisabledInputGate(FDisabledInputGate(false));
+				}
+			});
+
+		SUBSCRIBE_UOBJECT_METHOD(AFGCharacterPlayer, CanEquipBuildGun,
+			[](auto& Scope, const AFGCharacterPlayer* Self)
+			{
+				if (!IsValid(Self) || !GetCharacterOnline(Self)) return;
+				if (Self->GetBuildGun() == nullptr) return;
+
+				static int32 LogBudget = 20;
+				if (LogBudget > 0)
+				{
+					LogBudget--;
+					UE_LOG(LogSinkSubsystemRaceFix, Display,
+						TEXT("Hook 13: allowing CanEquipBuildGun on active online character %s"),
+						*Self->GetName());
+				}
+				Scope.Override(true);
+			});
+
+		SUBSCRIBE_UOBJECT_METHOD(AFGCharacterPlayer, CanEquipBuildGunForDismantle,
+			[](auto& Scope, const AFGCharacterPlayer* Self)
+			{
+				if (!IsValid(Self) || !GetCharacterOnline(Self)) return;
+				if (Self->GetBuildGun() == nullptr) return;
+				Scope.Override(true);
+			});
+
+		UE_LOG(LogSinkSubsystemRaceFix, Display,
+			TEXT("Hook 13: join/respawn completion repair hooks installed"));
+	}
+
+	void InstallSubsystemKickHook()
+	{
+		SUBSCRIBE_UOBJECT_METHOD_AFTER(AFGPlayerState, BeginPlay,
+			[](AFGPlayerState* Self)
+			{
+				if (!IsValid(Self)) return;
+				if (Self->GetLocalRole() != ROLE_Authority) return;
+				UWorld* World = Self->GetWorld();
+				if (!IsValid(World)) return;
+
+				UE_LOG(LogSinkSubsystemRaceFix, Display,
+					TEXT("Starting subsystem replication kick (%d ticks @ %.1fs interval) ")
+					TEXT("after PlayerState BeginPlay (%s)"),
+					KICK_TICKS, KICK_INTERVAL, *Self->GetName());
+
+				KickSubsystemReplication(TWeakObjectPtr<UWorld>(World), KICK_TICKS);
+				StartConveyorMaintenance(World);
+			});
+	}
+
+	void InstallConveyorAnimationHooks()
+	{
+		SUBSCRIBE_UOBJECT_METHOD(AFGConveyorChainSubsystem, IsUnusuallyLargeTickDelta,
+			[](auto& Scope, AFGConveyorChainSubsystem* Self)
+			{
+				if (!IsValid(Self)) return;
+				if (Self->HasAuthority()) return;
+
+				Scope.Override(false);
+			});
+
+		UE_LOG(LogSinkSubsystemRaceFix, Display,
+			TEXT("Hook 14: conveyor animation sync hooks installed"));
+	}
+
+	int32 WakeItemPickupsNear(UWorld* World, const FVector& Location, float Radius)
+	{
+		if (!IsValid(World)) return 0;
+
+		const float RadiusSq = Radius * Radius;
+		int32 PickupCount = 0;
+		for (TActorIterator<AFGItemPickup> It(World); It; ++It)
+		{
+			AFGItemPickup* Pickup = *It;
+			if (!IsValid(Pickup)) continue;
+			if (FVector::DistSquared(Pickup->GetActorLocation(), Location) > RadiusSq) continue;
+
+			ForceWakeItemPickup(Pickup);
+			++PickupCount;
+		}
+
+		return PickupCount;
+	}
+
+	bool CreatureHasDeathDropClass(AFGCreature* Creature)
+	{
+		if (!IsValid(Creature)) return false;
+
+		FProperty* DropProp = Creature->GetClass()->FindPropertyByName(TEXT("mItemToDrop"));
+		FClassProperty* ClassProp = CastField<FClassProperty>(DropProp);
+		if (ClassProp == nullptr) return false;
+
+		UObject* DropObject = ClassProp->GetObjectPropertyValue_InContainer(Creature);
+		UClass* DropClass = Cast<UClass>(DropObject);
+		return IsValid(DropClass);
+	}
+
+	void VerifyCreatureDeathDrop(TWeakObjectPtr<AFGCreature> WeakCreature, FVector DeathLocation, bool bDidRetry)
+	{
+		AFGCreature* Creature = WeakCreature.Get();
+		if (!IsValid(Creature)) return;
+		if (!Creature->HasAuthority()) return;
+
+		UWorld* World = Creature->GetWorld();
+		if (!IsValid(World)) return;
+
+		const int32 PickupCount = WakeItemPickupsNear(World, DeathLocation, 1200.0f);
+		if (PickupCount > 0)
+		{
+			UE_LOG(LogSinkSubsystemRaceFix, Display,
+				TEXT("Hook 15: woke %d pickup(s) after creature death near %s"),
+				PickupCount, *DeathLocation.ToString());
+			return;
+		}
+
+		if (bDidRetry) return;
+		if (!CreatureHasDeathDropClass(Creature))
+		{
+			UE_LOG(LogSinkSubsystemRaceFix, Display,
+				TEXT("Hook 15: no valid mItemToDrop for %s; not retrying SpawnDeathItem"),
+				*Creature->GetName());
+			return;
+		}
+
+		UE_LOG(LogSinkSubsystemRaceFix, Display,
+			TEXT("Hook 15: no pickup near creature death; retrying SpawnDeathItem once for %s"),
+			*Creature->GetName());
+		Creature->SpawnDeathItem();
+
+		FTimerHandle Handle;
+		World->GetTimerManager().SetTimer(
+			Handle,
+			FTimerDelegate::CreateLambda([WeakCreature, DeathLocation]()
+			{
+				VerifyCreatureDeathDrop(WeakCreature, DeathLocation, true);
+			}),
+			2.0f,
+			false);
+	}
+
+	void InstallCreatureLootHooks()
+	{
+		using FCreateItemDropSignature = AFGItemPickup_Spawnable* (*)(
+			UFGInventoryComponent*,
+			UWorld*,
+			const FInventoryStack&,
+			const FVector&,
+			const FRotator&,
+			TSubclassOf<AFGItemPickup_Spawnable>,
+			ULevel*,
+			FName);
+
+		using FAddItemToWorldStackSignature = AFGItemPickup_Spawnable* (*)(
+			UFGInventoryComponent*,
+			const FInventoryStack&,
+			const FVector&,
+			const FRotator&,
+			TSubclassOf<AFGItemPickup_Spawnable>);
+
+		using FCreateDropsInCylinderSignature = void (*)(
+			UWorld*,
+			const TArray<FInventoryStack>&,
+			FVector,
+			float,
+			const TArray<AActor*>&,
+			TArray<AFGItemPickup_Spawnable*>&,
+			TSubclassOf<AFGItemPickup_Spawnable>);
+
+		SUBSCRIBE_METHOD_EXPLICIT_AFTER(FCreateItemDropSignature, AFGItemPickup_Spawnable::CreateItemDrop,
+			[](AFGItemPickup_Spawnable* const& CreatedPickup,
+				UFGInventoryComponent* /*InventoryComponent*/,
+				UWorld* /*World*/,
+				const FInventoryStack& /*Item*/,
+				const FVector& /*SpawnLocation*/,
+				const FRotator& /*SpawnRotation*/,
+				TSubclassOf<AFGItemPickup_Spawnable> /*ItemDropClass*/,
+				ULevel* /*SpawnLevelOverride*/,
+				FName /*SpawnNameOverride*/)
+			{
+				ForceWakeItemPickup(CreatedPickup);
+			});
+
+		SUBSCRIBE_METHOD_EXPLICIT_AFTER(FAddItemToWorldStackSignature, AFGItemPickup_Spawnable::AddItemToWorldStackAtLocation,
+			[](AFGItemPickup_Spawnable* const& CreatedPickup,
+				UFGInventoryComponent* /*InventoryComponent*/,
+				const FInventoryStack& /*Item*/,
+				const FVector& /*SpawnLocation*/,
+				const FRotator& /*SpawnRotation*/,
+				TSubclassOf<AFGItemPickup_Spawnable> /*ItemDropClass*/)
+			{
+				ForceWakeItemPickup(CreatedPickup);
+			});
+
+		SUBSCRIBE_METHOD_EXPLICIT_AFTER(FCreateDropsInCylinderSignature, AFGItemPickup_Spawnable::CreateItemDropsInCylinder,
+			[](UWorld* /*World*/,
+				const TArray<FInventoryStack>& /*Items*/,
+				FVector /*AroundLocation*/,
+				float /*SphereRadius*/,
+				const TArray<AActor*>& /*ActorsToIgnore*/,
+				TArray<AFGItemPickup_Spawnable*>& OutItemDrops,
+				TSubclassOf<AFGItemPickup_Spawnable> /*ItemDropClass*/)
+			{
+				for (AFGItemPickup_Spawnable* Pickup : OutItemDrops)
+				{
+					ForceWakeItemPickup(Pickup);
+				}
+			});
+
+		SUBSCRIBE_UOBJECT_METHOD_AFTER(AFGCreature, Died,
+			[](AFGCreature* Self, AActor* /*Died*/)
+			{
+				if (!IsValid(Self)) return;
+				if (!Self->HasAuthority()) return;
+
+				UWorld* World = Self->GetWorld();
+				if (!IsValid(World)) return;
+
+				const FVector DeathLocation = Self->GetActorLocation();
+				FTimerHandle Handle;
+				World->GetTimerManager().SetTimer(
+					Handle,
+					FTimerDelegate::CreateLambda([WeakCreature = TWeakObjectPtr<AFGCreature>(Self), DeathLocation]()
+					{
+						VerifyCreatureDeathDrop(WeakCreature, DeathLocation, false);
+					}),
+					1.0f,
+					false);
+			});
+
+		UE_LOG(LogSinkSubsystemRaceFix, Display,
+			TEXT("Hook 15: creature loot replication hooks installed"));
+	}
+
+	// =========================================================================
+	// Hook 7: Force-hide stuck client loading screen
+	// Symptom: Client successfully joins multiplayer (listen OR dedicated),
+	//          enters the world, character is possessed and active (audio
+	//          plays for swings, footsteps, etc), input fires gameplay actions
+	//          — but the loading-screen UMG widget never dismisses, blocking
+	//          all UI input. The host's player list shows the joiner online.
+	// Cause:   SF's loading-screen dismissal trigger doesn't fire when the
+	//          save has stale subobject references. Concrete evidence:
+	//            LogNet: Warning: UActorChannel::ProcessBunch:
+	//              ReadContentBlockPayload failed to find/create object.
+	//              RepObj: FGInventoryComponent ... InventoryPotential
+	//          That replication-layer warning + the MoviePlayer log
+	//          "PassLoadingScreenWindowBackToGame failed. No Window" indicates
+	//          the loading-screen movie player can't hand control back, and
+	//          SF's "ready to dismiss" predicate stays false forever.
+	// Fix:     Once the local client has a valid PlayerController with a
+	//          possessed Pawn AND the critical subsystems are valid, call
+	//          UFGLocalPlayer::ForceHideEarlyLoadingScreen() and stop the
+	//          movie player explicitly. Idempotent and safe — the call is
+	//          a no-op if the screen is already hidden.
+	// =========================================================================
+	static FTSTicker::FDelegateHandle GLoadingKillerHandle;
+	static const float LOADING_KILLER_INTERVAL = 0.5f;
+	static const int32 SLATE_DUMP_MAX_DEPTH = 14;
+
+	// Recursively force-collapse a widget and every descendant. Used
+	// after we identify the SFGMinimalLoadingScreen subtree and want to
+	// guarantee nothing inside it renders (children's individual visibility
+	// is otherwise honoured even if the parent reports Collapsed).
+	void ForceCollapseSubtree(TSharedPtr<SWidget> W)
+	{
+		if (!W.IsValid()) return;
+		W->SetVisibility(EVisibility::Collapsed);
+		FChildren* Kids = W->GetChildren();
+		if (Kids == nullptr) return;
+		const int32 N = Kids->Num();
+		for (int32 i = 0; i < N; i++)
+		{
+			ForceCollapseSubtree(Kids->GetChildAt(i));
+		}
+	}
+
+	// Walk the Slate tree from a window, find any "FGMinimalLoadingScreen"
+	// / "FGSpinnerLoader" / "FGLoadingScreen" widget, and force it + all
+	// descendants to EVisibility::Collapsed. Returns true if any such
+	// widget was found (so we know the kill fired).
+	bool KillLoadingScreenSlate(TSharedPtr<SWidget> W)
+	{
+		if (!W.IsValid()) return false;
+		const FString Type = W->GetTypeAsString();
+		if (Type.Contains(TEXT("FGMinimalLoadingScreen")) ||
+			Type.Contains(TEXT("FGSpinnerLoader")) ||
+			Type.Contains(TEXT("FGLoadingScreen")))
+		{
+			ForceCollapseSubtree(W);
+			return true;
+		}
+		bool bAny = false;
+		FChildren* Kids = W->GetChildren();
+		if (Kids != nullptr)
+		{
+			const int32 N = Kids->Num();
+			for (int32 i = 0; i < N; i++)
+			{
+				if (KillLoadingScreenSlate(Kids->GetChildAt(i)))
+				{
+					bAny = true;
+				}
+			}
+		}
+		return bAny;
+	}
+
+	// Recursively dump SWidget hierarchy to log so we can identify the
+	// loading-screen Slate widget (which lives outside UMG's UUserWidget
+	// pool and thus isn't visible to TObjectIterator<UUserWidget>).
+	void DumpSlateWidget(TSharedPtr<SWidget> W, int32 Depth)
+	{
+		if (!W.IsValid() || Depth > SLATE_DUMP_MAX_DEPTH) return;
+
+		FString Pad;
+		for (int32 i = 0; i < Depth; i++) Pad += TEXT("  ");
+
+		const EVisibility V = W->GetVisibility();
+		UE_LOG(LogSinkSubsystemRaceFix, Display,
+			TEXT("[SLATE]%s%s vis=%s vis-hidden=%d"),
+			*Pad,
+			*W->GetTypeAsString(),
+			*V.ToString(),
+			(int32)(V == EVisibility::Hidden));
+
+		FChildren* Children = W->GetChildren();
+		if (Children == nullptr) return;
+		const int32 N = Children->Num();
+		for (int32 i = 0; i < N; i++)
+		{
+			DumpSlateWidget(Children->GetChildAt(i), Depth + 1);
+		}
+	}
+
+	bool LoadingScreenKillerTick(float /*Delta*/)
+	{
+		if (!GEngine) return true;
+
+		UWorld* World = nullptr;
+		for (const FWorldContext& Ctx : GEngine->GetWorldContexts())
+		{
+			if (Ctx.WorldType == EWorldType::Game && Ctx.World() != nullptr)
+			{
+				World = Ctx.World();
+				break;
+			}
+		}
+		if (!World) return true;
+
+		// Server doesn't show loading screens we care about; bail.
+		const ENetMode NM = World->GetNetMode();
+		if (NM == NM_DedicatedServer) return true;
+
+		APlayerController* PC = World->GetFirstPlayerController();
+		if (!IsValid(PC)) return true;
+
+		// Note: don't gate on Pawn or GS being valid — we still want the
+		// Slate-hierarchy dump even if the player hasn't been possessed yet,
+		// because the loading screen overlay is most likely active in that
+		// exact pre-possession window.
+		APawn* Pawn = PC->GetPawn();
+		AGameStateBase* GS = World->GetGameState();
+
+		// Movement-unfreeze: the "stuck loading screen but actions work
+		// (LMB swing / F open deconstruct) only WASD/jump dead" pattern
+		// means the CharacterMovementComponent is frozen at MOVE_None.
+		// SF disables movement during the loading-screen window and never
+		// re-enables it when dismissal fails. Force-restore the input
+		// ignore flags AND the movement mode every tick.
+		if (IsValid(Pawn) && NM != NM_Standalone)
+		{
+			static bool bLoggedFreezeState = false;
+			if (!bLoggedFreezeState)
+			{
+				bLoggedFreezeState = true;
+				int32 InitialMM = -1;
+				if (ACharacter* CharLog = Cast<ACharacter>(Pawn))
+				{
+					if (UCharacterMovementComponent* CMC = CharLog->GetCharacterMovement())
+					{
+						InitialMM = (int32)CMC->MovementMode;
+					}
+				}
+				UE_LOG(LogSinkSubsystemRaceFix, Display,
+					TEXT("Hook 7: PC freeze probe — IgnoreMoveInput=%d IgnoreLookInput=%d MovementMode=%d (0=None,1=Walking,3=Falling,5=Flying)"),
+					(int32)PC->IsMoveInputIgnored(),
+					(int32)PC->IsLookInputIgnored(),
+					InitialMM);
+			}
+
+			PC->ResetIgnoreInputFlags();
+
+			if (ACharacter* Char = Cast<ACharacter>(Pawn))
+			{
+				if (UCharacterMovementComponent* CMC = Char->GetCharacterMovement())
+				{
+					if (CMC->MovementMode == MOVE_None)
+					{
+						CMC->SetMovementMode(MOVE_Walking);
+						UE_LOG(LogSinkSubsystemRaceFix, Display,
+							TEXT("Hook 7: restored CharacterMovement MovementMode None -> Walking"));
+					}
+				}
+			}
+
+			// IsPlayerOnline() is protected in AFGCharacterPlayer so we
+			// can't call it from here. Skip the readback — we'll need to
+			// rely on log evidence elsewhere or use an offset-based read
+			// of mIsPlayerOnline directly if we want to confirm.
+		}
+
+		// Stuck-respawn-overlay kill: the "RESPAWN_SEQUENCE.BAT / FICSIT TIP /
+		// INITIALIZING..." overlay is `Widget_Respawn_C` from the RespawnPoints
+		// mod. On a HEALTHY join it plays the "Welcome back, [player]" splash
+		// for a few seconds and dismisses itself; on a BROKEN join it sticks
+		// forever. We only want to kill the broken case — collapsing the
+		// healthy widget instantly amputates the post-splash UI chain (objective
+		// pane, tutorial gates, build menu init, etc.) and leaves "half the
+		// game not working." Per-widget first-seen tracking with a grace window
+		// preserves the original safety net without breaking healthy joins.
+		//
+		// Generic *LoadingScreen* classes get killed immediately (no grace) —
+		// those have always been tied to the broken case, never the splash.
+		if (NM != NM_Standalone && IsValid(Pawn))
+		{
+			static const double RESPAWN_WIDGET_GRACE_SECONDS = 12.0;
+			static TMap<FObjectKey, double> GRespawnWidgetFirstSeen;
+			static bool bLoggedRespawnKill = false;
+
+			const double Now = FPlatformTime::Seconds();
+			TSet<FObjectKey> SeenThisTick;
+
+			for (TObjectIterator<UUserWidget> It; It; ++It)
+			{
+				UUserWidget* UW = *It;
+				if (!IsValid(UW)) continue;
+				if (UW->GetWorld() != World) continue;
+				if (!UW->IsInViewport()) continue;
+				const FString Cls = UW->GetClass()->GetName();
+
+				const bool bIsRespawn = (Cls == TEXT("Widget_Respawn_C"));
+				const bool bIsLoading = Cls.Contains(TEXT("LoadingScreen"));
+				if (!bIsRespawn && !bIsLoading) continue;
+				if (UW->GetVisibility() == ESlateVisibility::Collapsed) continue;
+
+				if (bIsRespawn)
+				{
+					// Grace period: let the splash play and self-dismiss. Only
+					// kill if it's still visible after the grace window.
+					const FObjectKey Key(UW);
+					SeenThisTick.Add(Key);
+					double* FirstSeen = GRespawnWidgetFirstSeen.Find(Key);
+					if (FirstSeen == nullptr)
+					{
+						GRespawnWidgetFirstSeen.Add(Key, Now);
+						continue;
+					}
+					if ((Now - *FirstSeen) < RESPAWN_WIDGET_GRACE_SECONDS) continue;
+				}
+
+				UW->SetVisibility(ESlateVisibility::Collapsed);
+				if (!bLoggedRespawnKill)
+				{
+					bLoggedRespawnKill = true;
+					UE_LOG(LogSinkSubsystemRaceFix, Display,
+						TEXT("Hook 7: Collapsed stuck respawn/loading UMG widget %s (%s)%s"),
+						*Cls, *UW->GetName(),
+						bIsRespawn ? TEXT(" [past grace window, treating as stuck]") : TEXT(""));
+				}
+			}
+
+			// Drop tracking entries for widgets that left the viewport so
+			// the map doesn't accumulate dead handles across the session.
+			for (auto It = GRespawnWidgetFirstSeen.CreateIterator(); It; ++It)
+			{
+				if (!SeenThisTick.Contains(It.Key()))
+				{
+					It.RemoveCurrent();
+				}
+			}
+		}
+
+		// Surgical kill: walk the Slate tree and force-collapse the
+		// SFGMinimalLoadingScreen subtree (the actual stuck overlay we
+		// identified from the depth-14 dump). Runs every tick because
+		// SF re-asserts visibility — needs continuous suppression while
+		// the broken loading-screen state machine is still "active".
+		if (NM != NM_Standalone && FSlateApplication::IsInitialized())
+		{
+			TArray<TSharedRef<SWindow>> Windows = FSlateApplication::Get().GetInteractiveTopLevelWindows();
+			if (TSharedPtr<SWindow> Active = FSlateApplication::Get().GetActiveTopLevelWindow())
+			{
+				Windows.AddUnique(Active.ToSharedRef());
+			}
+			static bool bLoggedKill = false;
+			for (const TSharedRef<SWindow>& Win : Windows)
+			{
+				if (KillLoadingScreenSlate(Win) && !bLoggedKill)
+				{
+					bLoggedKill = true;
+					UE_LOG(LogSinkSubsystemRaceFix, Display,
+						TEXT("Hook 7: KillLoadingScreenSlate hit — collapsed SFGMinimalLoadingScreen subtree"));
+				}
+			}
+		}
+
+		// Multi-pronged attack — call every API that can dismiss any kind of
+		// loading-screen overlay SF has. All idempotent, so running every
+		// 0.5s is fine.
+		if (UFGLocalPlayer* LP = Cast<UFGLocalPlayer>(PC->GetLocalPlayer()))
+		{
+			LP->ForceHideEarlyLoadingScreen();
+		}
+
+		if (IGameMoviePlayer* MoviePlayer = GetMoviePlayer())
+		{
+			if (MoviePlayer->IsMovieCurrentlyPlaying())
+			{
+				MoviePlayer->StopMovie();
+			}
+		}
+
+		if (AFGPlayerController* FGPC = Cast<AFGPlayerController>(PC))
+		{
+			if (UFGGameUI* GameUI = FGPC->GetGameUI())
+			{
+				if (!GameUI->IsFrontEndLoadingScreenFinished())
+				{
+					GameUI->SetFrontEndLoadingScreenFinished(true);
+				}
+			}
+		}
+
+		// Per-world diagnostic: dump UMG widgets AND walk the Slate window
+		// tree on world change. The loading-screen overlay is a Slate-only
+		// widget (TSharedPtr<SWidget> mEarlyLoadingScreenWidget) so the UMG
+		// dump alone won't show it — the Slate walk will.
+		static TWeakObjectPtr<UWorld> LastDumpedWorld;
+		if (LastDumpedWorld.Get() != World)
+		{
+			LastDumpedWorld = World;
+
+			// (Removed: RemoveAllViewportWidgets brute-force — it also kills
+			// BP_GameUI_C which holds the EnhancedInput mapping context, so
+			// character movement/UI breaks when wiped. Need to target the
+			// loading-screen Slate widget surgically once we identify it.)
+			UE_LOG(LogSinkSubsystemRaceFix, Display,
+				TEXT("Hook 7: dumping all UUserWidget instances currently in viewport ")
+				TEXT("— look for the one rendering the stuck loading-screen overlay"));
+			int32 Counter = 0;
+			for (TObjectIterator<UUserWidget> It; It; ++It)
+			{
+				UUserWidget* W = *It;
+				if (!IsValid(W)) continue;
+				if (!W->IsInViewport()) continue;
+				if (W->GetWorld() != World) continue;
+				UE_LOG(LogSinkSubsystemRaceFix, Display,
+					TEXT("  viewport widget %d: class=%s name=%s vis=%d"),
+					Counter++, *W->GetClass()->GetName(), *W->GetName(),
+					(int32)W->GetVisibility());
+			}
+			UE_LOG(LogSinkSubsystemRaceFix, Display,
+				TEXT("Hook 7: %d UUserWidget(s) found in viewport"), Counter);
+
+			// Now walk the Slate window tree.  We deliberately use BOTH the
+			// "interactive top level" and the "active top level" sources,
+			// because the MoviePlayer's loading-screen window is typically
+			// not interactive (no input) and is missed by GetInteractiveTopLevelWindows.
+			if (FSlateApplication::IsInitialized())
+			{
+				FSlateApplication& SA = FSlateApplication::Get();
+
+				// Currently focused widget — useful to know what's eating
+				// keyboard input (camera-only movement = focused widget is
+				// eating WASD before it reaches the input component).
+				TSharedPtr<SWidget> FocusedW = SA.GetUserFocusedWidget(0);
+				UE_LOG(LogSinkSubsystemRaceFix, Display,
+					TEXT("Hook 7: focused widget for user 0 = %s"),
+					FocusedW.IsValid() ? *FocusedW->GetTypeAsString() : TEXT("<none>"));
+
+				TArray<TSharedRef<SWindow>> Windows = SA.GetInteractiveTopLevelWindows();
+				if (TSharedPtr<SWindow> Active = SA.GetActiveTopLevelWindow())
+				{
+					Windows.AddUnique(Active.ToSharedRef());
+				}
+
+				UE_LOG(LogSinkSubsystemRaceFix, Display,
+					TEXT("Hook 7: Slate windows discovered = %d (max depth %d)"),
+					Windows.Num(), SLATE_DUMP_MAX_DEPTH);
+				for (const TSharedRef<SWindow>& Win : Windows)
+				{
+					UE_LOG(LogSinkSubsystemRaceFix, Display,
+						TEXT("[SLATE] === Window: '%s' geom=%s visible=%d ==="),
+						*Win->GetTitle().ToString(),
+						*Win->GetSizeInScreen().ToString(),
+						(int32)Win->IsVisible());
+					DumpSlateWidget(Win, 0);
+				}
+
+				// Also surface MoviePlayer state, since one of its symptoms
+				// is leaving its loading-screen window in a partially-shown
+				// state (the "PassLoadingScreenWindowBackToGame failed. No Window"
+				// log line we see at startup).
+				if (IGameMoviePlayer* MP = GetMoviePlayer())
+				{
+					UE_LOG(LogSinkSubsystemRaceFix, Display,
+						TEXT("Hook 7: MoviePlayer state — IsMoviePlaying=%d IsLoadingFinished=%d"),
+						(int32)MP->IsMovieCurrentlyPlaying(),
+						(int32)MP->IsLoadingFinished());
+				}
+			}
+		}
+
+		UE_LOG(LogSinkSubsystemRaceFix, Verbose,
+			TEXT("Hook 7 tick: PC=%s Pawn=%s — dismissal attempts dispatched"),
+			*PC->GetName(),
+			IsValid(Pawn) ? *Pawn->GetName() : TEXT("<null>"));
+
+		// Stay registered — the loading screen can re-show on travel/respawn,
+		// and SF re-creates it. Polling at 0.5s is cheap and self-healing.
+		return true;
+	}
+
+	void InstallLoadingScreenKillerHook()
+	{
+		GLoadingKillerHandle = FTSTicker::GetCoreTicker().AddTicker(
+			FTickerDelegate::CreateStatic(&LoadingScreenKillerTick),
+			LOADING_KILLER_INTERVAL);
+
+		UE_LOG(LogSinkSubsystemRaceFix, Display,
+			TEXT("Loading screen killer ticker installed (every %.1fs on client only)"),
+			LOADING_KILLER_INTERVAL);
+	}
+
+	void InstallSchematicListFilterHook()
+	{
+		SUBSCRIBE_UOBJECT_METHOD_AFTER(AFGSchematicManager, GetAvailableSchematicsOfTypes,
+			[](const AFGSchematicManager* Self, TArray<ESchematicType> /*types*/,
+			   TArray<TSubclassOf<UFGSchematic>>& OutSchematics)
+			{
+				if (!IsValid(Self)) return;
+				const int32 Before = OutSchematics.Num();
+				OutSchematics.RemoveAll([](const TSubclassOf<UFGSchematic>& Cls)
+				{
+					return Cls.Get() == nullptr;
+				});
+				const int32 Removed = Before - OutSchematics.Num();
+				if (Removed > 0)
+				{
+					UE_LOG(LogSinkSubsystemRaceFix, Warning,
+						TEXT("Filtered %d null schematic(s) from GetAvailableSchematicsOfTypes ")
+						TEXT("(stale save reference to a mod-removed schematic class)"),
+						Removed);
+				}
+			});
+	}
+
+	void InstallPlayerStateRegisterHook()
+	{
+		SUBSCRIBE_UOBJECT_METHOD(AFGPlayerState, RegisterPlayerWithSession,
+			[](auto& Scope, AFGPlayerState* Self, bool bWasFromInvite)
+			{
+				if (!IsValid(Self))
+				{
+					return;
+				}
+
+				// Only intervene on the server. On clients this function is
+				// usually a no-op anyway, but be safe.
+				if (Self->GetLocalRole() != ROLE_Authority)
+				{
+					return;
+				}
+
+				// Skip SF's broken override entirely.
+				Scope.Cancel();
+
+				// Force mIsOnline=true here as well in case Hook 3 didn't
+				// see this particular PlayerState (race during late join).
+				FProperty* Prop = Self->GetClass()->FindPropertyByName(TEXT("mIsOnline"));
+				FBoolProperty* BoolProp = CastField<FBoolProperty>(Prop);
+				if (BoolProp != nullptr)
+				{
+					BoolProp->SetPropertyValue_InContainer(Self, true);
+					Self->ForceNetUpdate();
+				}
+
+				UE_LOG(LogSinkSubsystemRaceFix, Display,
+					TEXT("Cancelled AFGPlayerState::RegisterPlayerWithSession on %s ")
+					TEXT("(bWasFromInvite=%d) — bypassing LocalUser+IsOnline gates"),
+					*Self->GetName(), (int32)bWasFromInvite);
+			});
+	}
+}
+
+// Diagnostic hooks live in DiagnosticHooks.cpp. Forward-declared here so
+// StartupModule can install them. All output is gated by CVar
+// r.SinkRaceFix.Trace (default 0 = silent), so shipping this in the production
+// DLL has no behavioural cost when disabled.
+namespace SinkRaceFixDiag
+{
+	void InstallDiagnosticHooks();
+	void UninstallDiagnosticHooks();
+}
+
+void FSinkSubsystemRaceFixModule::StartupModule()
+{
+	UE_LOG(LogSinkSubsystemRaceFix, Display, TEXT("%s starting up"), MOD_NAME);
+
+#if !WITH_EDITOR
+	InstallSinkHook();
+	InstallSchematicHook();
+	InstallPlayerStateBeginPlayHook();
+	InstallPlayerStateRegisterHook();
+	InstallSchematicListFilterHook();
+	InstallSubsystemKickHook();
+	InstallRecipeManagerNullHook();
+	InstallMovementModeBlockHook();
+	InstallRespawnFreezeBlockHook();
+	InstallOnlineStateHook();
+	InstallJoinCompletionHook();
+	InstallConveyorAnimationHooks();
+	InstallCreatureLootHooks();
+	InstallLoadingScreenKillerHook();
+	SinkRaceFixDiag::InstallDiagnosticHooks();
+#endif
+}
+
+void FSinkSubsystemRaceFixModule::ShutdownModule()
+{
+	UE_LOG(LogSinkSubsystemRaceFix, Display, TEXT("%s shutting down"), MOD_NAME);
+#if !WITH_EDITOR
+	SinkRaceFixDiag::UninstallDiagnosticHooks();
+#endif
+}
+
+IMPLEMENT_GAME_MODULE(FSinkSubsystemRaceFixModule, SinkSubsystemRaceFix);

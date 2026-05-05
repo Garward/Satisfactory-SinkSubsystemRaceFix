@@ -15,7 +15,9 @@ public class SinkSubsystemRaceFix : ModuleRules
 			"Core",
 			"CoreUObject",
 			"Engine",
+			"AbstractInstance",
 			"FactoryGame",
+			"ReplicationGraph",
 			"SML"
 		});
 

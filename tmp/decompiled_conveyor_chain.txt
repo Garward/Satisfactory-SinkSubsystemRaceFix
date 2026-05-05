@@ -1,0 +1,2233 @@
+# Decompiled conveyor-chain function dump
+# Total functions matched: 27
+
+// =========================================================
+// UFGConveyorChainRemoteCallObject::Client_RespondChainItemUpdate
+// Entry: 18025bf70
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+/* WARNING: Enum "EStreamingSourcePriority": Some values do not have unique names */
+
+void __thiscall
+UFGConveyorChainRemoteCallObject::Client_RespondChainItemUpdate
+          (UFGConveyorChainRemoteCallObject *this,FConveyorChainItemRPCData *param_1)
+
+{
+  code *pcVar1;
+  UFunction *pUVar2;
+  FHotbar local_38;
+  UFGConveyorChainRemoteCallObject *local_28;
+  AFGConveyorChainSubsystem *local_20;
+  APlayerController *local_18;
+  undefined1 local_10;
+  
+                    /* 0x25bf70  15531
+                       ?Client_RespondChainItemUpdate@UFGConveyorChainRemoteCallObject@@QEAAXAEBUFConveyorChainItemRPCData@@@Z
+                        */
+  local_38.HotbarShortcuts.AllocatorInstance = (ForElementType<UFGHotbarShortcut_*>)0x0;
+  local_38.HotbarShortcuts.ArrayNum = 0;
+  local_38.HotbarShortcuts.ArrayMax = 0;
+  local_10 = 0;
+  FHotbar::operator=(&local_38,(FHotbar *)param_1);
+  local_28 = param_1->ChainRCO;
+  local_20 = param_1->ChainSubsystem;
+  local_18 = param_1->PlayerController;
+  local_10 = param_1->IsServerData;
+  pcVar1 = *(code **)(this->_padding_ + 0x268);
+  pUVar2 = UObject::FindFunctionChecked
+                     ((UObject *)this,
+                      NAME_UFGConveyorChainRemoteCallObject_Client_RespondChainItemUpdate);
+  (*pcVar1)(this,pUVar2,&local_38);
+  if (local_38.HotbarShortcuts.AllocatorInstance != (ForElementType<UFGHotbarShortcut_*>)0x0) {
+    FMemory::Free((void *)local_38.HotbarShortcuts.AllocatorInstance);
+  }
+  return;
+}
+
+
+
+// =========================================================
+// UFGConveyorChainRemoteCallObject::Client_RespondChainSegmentData
+// Entry: 18025c000
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+
+void __thiscall
+UFGConveyorChainRemoteCallObject::Client_RespondChainSegmentData
+          (UFGConveyorChainRemoteCallObject *this,FConveyorChainSegmentRPCData *param_1)
+
+{
+  code *pcVar1;
+  UFunction *pUVar2;
+  FHotbar local_28;
+  UFGConveyorChainRemoteCallObject *local_18;
+  undefined1 local_10;
+  
+                    /* 0x25c000  15533
+                       ?Client_RespondChainSegmentData@UFGConveyorChainRemoteCallObject@@QEAAXAEBUFConveyorChainSegmentRPCData@@@Z
+                        */
+  local_28.HotbarShortcuts.AllocatorInstance = (ForElementType<UFGHotbarShortcut_*>)0x0;
+  local_28.HotbarShortcuts.ArrayNum = 0;
+  local_28.HotbarShortcuts.ArrayMax = 0;
+  local_10 = 0;
+  FHotbar::operator=(&local_28,(FHotbar *)param_1);
+  local_18 = param_1->ChainRCO;
+  local_10 = param_1->IsServerData;
+  pcVar1 = *(code **)(this->_padding_ + 0x268);
+  pUVar2 = UObject::FindFunctionChecked
+                     ((UObject *)this,
+                      NAME_UFGConveyorChainRemoteCallObject_Client_RespondChainSegmentData);
+  (*pcVar1)(this,pUVar2,&local_28);
+  if (local_28.HotbarShortcuts.AllocatorInstance != (ForElementType<UFGHotbarShortcut_*>)0x0) {
+    FMemory::Free((void *)local_28.HotbarShortcuts.AllocatorInstance);
+  }
+  return;
+}
+
+
+
+// =========================================================
+// UFGConveyorChainRemoteCallObject::Server_RequestChainItemUpdate
+// Entry: 18025dab0
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+/* WARNING: Enum "EStreamingSourcePriority": Some values do not have unique names */
+
+void __thiscall
+UFGConveyorChainRemoteCallObject::Server_RequestChainItemUpdate
+          (UFGConveyorChainRemoteCallObject *this,FConveyorChainItemRPCData *param_1)
+
+{
+  code *pcVar1;
+  UFunction *pUVar2;
+  FHotbar local_38;
+  UFGConveyorChainRemoteCallObject *local_28;
+  AFGConveyorChainSubsystem *local_20;
+  APlayerController *local_18;
+  undefined1 local_10;
+  
+                    /* 0x25dab0  29102
+                       ?Server_RequestChainItemUpdate@UFGConveyorChainRemoteCallObject@@QEAAXAEBUFConveyorChainItemRPCData@@@Z
+                        */
+  local_38.HotbarShortcuts.AllocatorInstance = (ForElementType<UFGHotbarShortcut_*>)0x0;
+  local_38.HotbarShortcuts.ArrayNum = 0;
+  local_38.HotbarShortcuts.ArrayMax = 0;
+  local_10 = 0;
+  FHotbar::operator=(&local_38,(FHotbar *)param_1);
+  local_28 = param_1->ChainRCO;
+  local_20 = param_1->ChainSubsystem;
+  local_18 = param_1->PlayerController;
+  local_10 = param_1->IsServerData;
+  pcVar1 = *(code **)(this->_padding_ + 0x268);
+  pUVar2 = UObject::FindFunctionChecked
+                     ((UObject *)this,
+                      NAME_UFGConveyorChainRemoteCallObject_Server_RequestChainItemUpdate);
+  (*pcVar1)(this,pUVar2,&local_38);
+  if (local_38.HotbarShortcuts.AllocatorInstance != (ForElementType<UFGHotbarShortcut_*>)0x0) {
+    FMemory::Free((void *)local_38.HotbarShortcuts.AllocatorInstance);
+  }
+  return;
+}
+
+
+
+// =========================================================
+// UFGConveyorChainRemoteCallObject::Server_RequestChainSegmentData
+// Entry: 18025db40
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+
+void __thiscall
+UFGConveyorChainRemoteCallObject::Server_RequestChainSegmentData
+          (UFGConveyorChainRemoteCallObject *this,FConveyorChainSegmentRPCData *param_1)
+
+{
+  code *pcVar1;
+  UFunction *pUVar2;
+  FHotbar local_28;
+  UFGConveyorChainRemoteCallObject *local_18;
+  undefined1 local_10;
+  
+                    /* 0x25db40  29104
+                       ?Server_RequestChainSegmentData@UFGConveyorChainRemoteCallObject@@QEAAXAEBUFConveyorChainSegmentRPCData@@@Z
+                        */
+  local_28.HotbarShortcuts.AllocatorInstance = (ForElementType<UFGHotbarShortcut_*>)0x0;
+  local_28.HotbarShortcuts.ArrayNum = 0;
+  local_28.HotbarShortcuts.ArrayMax = 0;
+  local_10 = 0;
+  FHotbar::operator=(&local_28,(FHotbar *)param_1);
+  local_18 = param_1->ChainRCO;
+  local_10 = param_1->IsServerData;
+  pcVar1 = *(code **)(this->_padding_ + 0x268);
+  pUVar2 = UObject::FindFunctionChecked
+                     ((UObject *)this,
+                      NAME_UFGConveyorChainRemoteCallObject_Server_RequestChainSegmentData);
+  (*pcVar1)(this,pUVar2,&local_28);
+  if (local_28.HotbarShortcuts.AllocatorInstance != (ForElementType<UFGHotbarShortcut_*>)0x0) {
+    FMemory::Free((void *)local_28.HotbarShortcuts.AllocatorInstance);
+  }
+  return;
+}
+
+
+
+// =========================================================
+// AFGBuildableConveyorBase::OnRep_ChainInformation
+// Entry: 18049fed0
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+
+void __thiscall AFGBuildableConveyorBase::OnRep_ChainInformation(AFGBuildableConveyorBase *this)
+
+{
+                    /* 0x49fed0  26454  ?OnRep_ChainInformation@AFGBuildableConveyorBase@@IEAAXXZ */
+  if (this->mConveyorChainActor != (AFGConveyorChainActor *)0x0) {
+    AFGConveyorChainActor::AddClientAvailableConveyor(this->mConveyorChainActor,this);
+    return;
+  }
+  return;
+}
+
+
+
+// =========================================================
+// AFGConveyorChainActor::AddClientAvailableConveyor
+// Entry: 1806ff900
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+
+void __thiscall
+AFGConveyorChainActor::AddClientAvailableConveyor
+          (AFGConveyorChainActor *this,AFGBuildableConveyorBase *param_1)
+
+{
+  AFGBuildableConveyorBase *local_res10 [3];
+  
+                    /* 0x6ff900  13923
+                       ?AddClientAvailableConveyor@AFGConveyorChainActor@@QEAAXPEAVAFGBuildableConveyorBase@@@Z
+                        */
+  local_res10[0] = param_1;
+  TArray<AFGBuildableBlueprintDesigner_*,TSizedDefaultAllocator<32>_>::
+  AddUniqueImpl<AFGBuildableBlueprintDesigner_*_const_&>
+            ((TArray<AFGBuildableBlueprintDesigner_*,TSizedDefaultAllocator<32>_> *)
+             &this->mClientAvailableConveyors,(AFGBuildableBlueprintDesigner **)local_res10);
+  this->mClientAvailableConveyorsChanged = true;
+  return;
+}
+
+
+
+// =========================================================
+// UFGConveyorChainSubsystemReplicationComponent::BeginPlay
+// Entry: 180701b50
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+/* WARNING: Enum "EStreamingSourcePriority": Some values do not have unique names */
+
+void __thiscall
+UFGConveyorChainSubsystemReplicationComponent::BeginPlay
+          (UFGConveyorChainSubsystemReplicationComponent *this)
+
+{
+  FWeakObjectPtr *this_00;
+  TObjectPtr<AGameStateBase> *this_01;
+  AGameStateBase *pAVar1;
+  undefined8 *puVar2;
+  char cVar3;
+  bool bVar4;
+  APlayerController *pAVar5;
+  AFGConveyorChainSubsystem *pAVar6;
+  UWorld *pUVar7;
+  UClass *pUVar8;
+  __uint64 _Var9;
+  uint uStack_4c;
+  TDelegateAccessHandlerBase<FNotThreadSafeDelegateMode> local_48;
+  undefined8 *local_40;
+  int local_38;
+  FWriteAccessScope local_30;
+  
+                    /* 0x701b50  14700
+                       ?BeginPlay@UFGConveyorChainSubsystemReplicationComponent@@UEAAXXZ */
+  UActorComponent::BeginPlay((UActorComponent *)this);
+  pAVar5 = CastChecked<APlayerController,AActor>((AActor *)this->_padding_);
+  if (((char)pAVar5->_padding_ == '\x03') &&
+     (cVar3 = (**(code **)(pAVar5->_padding_ + 0x7b0))(pAVar5), cVar3 == '\0')) {
+    pAVar6 = AFGConveyorChainSubsystem::Get((UObject *)this);
+    if (pAVar6 == (AFGConveyorChainSubsystem *)0x0) {
+      return;
+    }
+    this->mConveyorChainSubsystem = pAVar6;
+    SendInitialReplicationData(this);
+    return;
+  }
+  if ((char)pAVar5->_padding_ == '\x03') {
+    return;
+  }
+  cVar3 = (**(code **)(pAVar5->_padding_ + 0x7b0))(pAVar5);
+  if (cVar3 == '\0') {
+    return;
+  }
+  pUVar7 = (UWorld *)this->_padding_;
+  if (pUVar7 == (UWorld *)0x0) {
+    pUVar7 = UActorComponent::GetWorld_Uncached((UActorComponent *)this);
+  }
+  this_01 = &pUVar7->GameState;
+  if ((this_01->field0_0x0).DebugPtr == (AGameStateBase *)0x0) {
+    return;
+  }
+  pUVar8 = AFGGameState::GetPrivateStaticClass();
+  bVar4 = FObjectPtr::IsA((FObjectPtr *)this_01,pUVar8);
+  if (!bVar4) {
+    return;
+  }
+  pAVar1 = (this_01->field0_0x0).DebugPtr;
+  if (pAVar1 == (AGameStateBase *)0x0) {
+    return;
+  }
+  InitializeAsClient(this);
+  local_48.AccessDetector.State = (FMRSWRecursiveAccessDetector)(atomic<unsigned___int64>)0x0;
+  local_40 = (undefined8 *)0x0;
+  local_38 = 0;
+  TDelegateAccessHandlerBase<FNotThreadSafeDelegateMode>::FWriteAccessScope::FWriteAccessScope
+            (&local_30,&local_48.AccessDetector);
+  if (local_38 != 0) {
+    if (local_40 != (undefined8 *)0x0) {
+      (**(code **)*local_40)(local_40);
+    }
+    if (local_38 == 3) goto LAB_180701cb4;
+  }
+  TSizedHeapAllocator<32,struct_FMemory>::ForAnyElementType::ResizeAllocation
+            ((ForAnyElementType *)&local_40,0,3,0x10);
+  local_38 = 3;
+LAB_180701cb4:
+  puVar2 = local_40;
+  *local_40 = &___7__TCommonDelegateInstanceState___A6AXXZUFDefaultDelegateUserPolicy____V__6B_;
+  _Var9 = FDelegateHandle::GenerateNewID();
+  puVar2[2] = _Var9;
+  this_00 = (FWeakObjectPtr *)(puVar2 + 3);
+  *puVar2 = &
+            ___7__TBaseUObjectMethodDelegateInstance__0A_VUFGInventoryComponent____A6AXXZUFDefaultDelegateUserPolicy____V__6B_
+  ;
+  this_00->ObjectIndex = 0;
+  this_00->ObjectSerialNumber = 0;
+  FWeakObjectPtr::operator=(this_00,(UObject *)this);
+  puVar2[4] = InitializeAsClient;
+  puVar2[5] = (ulonglong)uStack_4c << 0x20;
+  TDelegateAccessHandlerBase<FNotThreadSafeDelegateMode>::FWriteAccessScope::~FWriteAccessScope
+            (&local_30);
+  TMulticastDelegateBase<FDefaultDelegateUserPolicy>::
+  AddDelegateInstance<TDelegate<void___cdecl(void),FDefaultDelegateUserPolicy>_>
+            ((TMulticastDelegateBase<FDefaultDelegateUserPolicy> *)&pAVar1[1].field_0x190,
+             (TDelegate<void___cdecl(void),FDefaultDelegateUserPolicy> *)&stack0x00000008);
+  TDelegateAccessHandlerBase<FNotThreadSafeDelegateMode>::FWriteAccessScope::FWriteAccessScope
+            (&local_30,&local_48.AccessDetector);
+  if ((local_38 != 0) && (local_40 != (undefined8 *)0x0)) {
+    (**(code **)*local_40)();
+    TSizedHeapAllocator<32,struct_FMemory>::ForAnyElementType::ResizeAllocation
+              ((ForAnyElementType *)&local_40,0,0,0x10);
+    local_38 = 0;
+  }
+  TDelegateAccessHandlerBase<FNotThreadSafeDelegateMode>::FWriteAccessScope::~FWriteAccessScope
+            (&local_30);
+  if (local_40 != (undefined8 *)0x0) {
+    FMemory::Free(local_40);
+  }
+  TDelegateAccessHandlerBase<FNotThreadSafeDelegateMode>::
+  ~TDelegateAccessHandlerBase<FNotThreadSafeDelegateMode>(&local_48);
+  return;
+}
+
+
+
+// =========================================================
+// AFGConveyorChainActor::BuildChain
+// Entry: 180702380
+// =========================================================
+
+/* WARNING: Removing unreachable block (ram,0x000180702a16) */
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+
+bool __thiscall AFGConveyorChainActor::BuildChain(AFGConveyorChainActor *this)
+
+{
+  TArray<FConveyorChainSplineSegment,TSizedDefaultAllocator<32>_> *this_00;
+  ForElementType<TSubclassOf<AActor>_> FVar1;
+  ForElementType<TSubclassOf<UFGCategory>_> FVar2;
+  float fVar3;
+  float fVar4;
+  float fVar5;
+  AFGBuildableConveyorBase *pAVar6;
+  ForElementType<FConveyorChainSplineSegment> FVar7;
+  longlong lVar8;
+  code *pcVar9;
+  undefined1 auVar10 [16];
+  undefined1 uVar11;
+  bool bVar12;
+  bool bVar13;
+  uint uVar14;
+  uint uVar15;
+  UClass *pUVar16;
+  int iVar17;
+  uint uVar18;
+  AFGBuildableConveyorBase *pAVar19;
+  ulonglong uVar20;
+  AFGBuildableConveyorBase *pAVar21;
+  ForElementType<wchar_t> FVar22;
+  ForElementType<TSubclassOf<AActor>_> FVar23;
+  ForElementType<TSubclassOf<UFGCategory>_> FVar24;
+  ForElementType<wchar_t> FVar25;
+  AFGBuildableConveyorBase *pAVar26;
+  uint uVar27;
+  undefined8 *puVar28;
+  longlong lVar29;
+  TArray<AFGBuildableConveyorMonitor_*,TSizedDefaultAllocator<32>_> *pTVar30;
+  float fVar31;
+  void *unaff_retaddr;
+  uint local_res10;
+  longlong local_res20;
+  TArray<TSubclassOf<AActor>,TSizedDefaultAllocator<32>_> local_168;
+  undefined4 local_158 [2];
+  TArray<int,TSizedDefaultAllocator<32>_> local_150;
+  AFGBuildableConveyorBase *local_140;
+  TArray<TSubclassOf<UFGCategory>,TSizedDefaultAllocator<32>_> local_138;
+  ForElementType<TSubclassOf<AActor>_> local_128;
+  FName local_120;
+  FName local_118;
+  AFGBuildableConveyorBase *local_110;
+  ForElementType<TSubclassOf<AActor>_> local_108;
+  FString local_100;
+  FString local_f0 [2];
+  undefined8 local_d0 [18];
+  
+                    /* 0x702380  14793  ?BuildChain@AFGConveyorChainActor@@QEAA_NXZ */
+  pAVar26 = (AFGBuildableConveyorBase *)0x0;
+  if ((char)this->_padding_ == '\x03') {
+    if (this->mConveyorChainSubsystem == (AFGConveyorChainSubsystem *)0x0) {
+      `AFGConveyorChainActor::BuildChain'::__l9::Impl::ExecCheckImplInternal();
+      pcVar9 = (code *)swi(3);
+      uVar11 = (*pcVar9)();
+      return (bool)uVar11;
+    }
+    if ((this->mFirstConveyor == (AFGBuildableConveyorBase *)0x0) ||
+       (this->mLastConveyor == (AFGBuildableConveyorBase *)0x0)) {
+      if (4 < (byte)LogConveyorChain._0_1_) {
+        UE::Logging::Private::BasicLog((FLogCategoryBase *)&LogConveyorChain,&::LOG_Static);
+      }
+    }
+    else {
+      if (5 < (byte)LogConveyorChain._0_1_) {
+        UE::Logging::Private::BasicLog((FLogCategoryBase *)&LogConveyorChain,&::LOG_Static);
+      }
+      local_168.AllocatorInstance = (ForElementType<TSubclassOf<AActor>_>)0x0;
+      fVar31 = 0.0;
+      local_158[0] = 0;
+      local_150.AllocatorInstance = (ForElementType<int>)0x0;
+      local_150.ArrayNum = 0;
+      local_150.ArrayMax = 0;
+      local_168.ArrayNum = 0;
+      local_168.ArrayMax = 0;
+      pAVar21 = this->mFirstConveyor;
+      do {
+        pAVar19 = pAVar21;
+        local_140 = pAVar19;
+        if ((ulonglong)local_168.AllocatorInstance <= &local_140) {
+          if (&local_140 <
+              (AFGBuildableConveyorBase **)
+              ((longlong)local_168.AllocatorInstance + (longlong)local_168.ArrayMax * 8)) {
+            bVar12 = FDebug::CheckVerifyFailedImpl
+                               ("Addr < GetData() || Addr >= (GetData() + ArrayMax)",
+                                "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                                ,0x63e,unaff_retaddr,
+                                L"Attempting to use a container element (%p) which already comes from the container being modified (%p, ArrayMax: %lld, ArrayNum: %lld, SizeofElement: %d)!"
+                                ,&local_140,local_168.AllocatorInstance,(longlong)local_168.ArrayMax
+                                ,(longlong)local_168.ArrayNum,8);
+            if (bVar12) {
+              pcVar9 = (code *)swi(3);
+              uVar11 = (*pcVar9)();
+              return (bool)uVar11;
+            }
+          }
+        }
+        iVar17 = local_168.ArrayNum;
+        uVar20 = local_168._8_8_ & 0xffffffff;
+        uVar14 = local_168.ArrayNum + 1;
+        local_168.ArrayNum = uVar14;
+        if ((uint)local_168.ArrayMax < uVar14) {
+          TArray<TSubclassOf<AActor>,TSizedDefaultAllocator<32>_>::ResizeGrow(&local_168,iVar17);
+        }
+        memmove((AFGBuildableConveyorBase **)((longlong)local_168.AllocatorInstance + 8),
+                (void *)local_168.AllocatorInstance,uVar20 << 3);
+        *(AFGBuildableConveyorBase **)local_168.AllocatorInstance = local_140;
+        if ((char)this->_padding_ == '\x03') {
+          pAVar21 = local_140->mNextConveyor;
+        }
+        else {
+          pAVar21 = (AFGBuildableConveyorBase *)
+                    local_140->mConnection1->mConnectedComponent->mOuterBuildable;
+          if (pAVar21 != (AFGBuildableConveyorBase *)0x0) {
+            pUVar16 = AFGBuildableConveyorBase::GetPrivateStaticClass();
+            iVar17 = (int)pUVar16->_padding_;
+            if ((iVar17 <= *(int *)(pAVar21->_padding_ + 0x38)) &&
+               ((longlong *)
+                *(undefined1 **)(*(longlong *)(pAVar21->_padding_ + 0x30) + (longlong)iVar17 * 8) ==
+                &pUVar16->_padding_)) goto LAB_18070254e;
+          }
+          pAVar21 = (AFGBuildableConveyorBase *)0x0;
+        }
+LAB_18070254e:
+      } while (pAVar21 != (AFGBuildableConveyorBase *)0x0);
+      pAVar6 = this->mLastConveyor;
+      if (pAVar19 == pAVar6) {
+        FVar1 = (ForElementType<TSubclassOf<AActor>_>)
+                ((longlong)local_168.AllocatorInstance + (longlong)local_168.ArrayNum * 8);
+        local_140 = (AFGBuildableConveyorBase *)0x0;
+        FVar23 = local_168.AllocatorInstance;
+        pAVar21 = pAVar26;
+        if (local_168.AllocatorInstance != FVar1) {
+          do {
+            pAVar19 = *(AFGBuildableConveyorBase **)FVar23;
+            if (pAVar21 == (AFGBuildableConveyorBase *)0x0) {
+              local_158[0] = 0;
+            }
+            else {
+              local_158[0] = (**(code **)(pAVar21->_padding_ + 0x900))(pAVar21);
+            }
+            if ((ulonglong)local_150.AllocatorInstance <= local_158) {
+              if (local_158 <
+                  (undefined4 *)
+                  ((longlong)local_150.AllocatorInstance + (longlong)local_150.ArrayMax * 4)) {
+                bVar12 = FDebug::CheckVerifyFailedImpl
+                                   ("Addr < GetData() || Addr >= (GetData() + ArrayMax)",
+                                    "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                                    ,0x63e,unaff_retaddr,
+                                    L"Attempting to use a container element (%p) which already comes from the container being modified (%p, ArrayMax: %lld, ArrayNum: %lld, SizeofElement: %d)!"
+                                    ,local_158,local_150.AllocatorInstance,
+                                    (longlong)local_150.ArrayMax,(longlong)local_150.ArrayNum,4);
+                if (bVar12) {
+                  pcVar9 = (code *)swi(3);
+                  uVar11 = (*pcVar9)();
+                  return (bool)uVar11;
+                }
+              }
+            }
+            iVar17 = local_150.ArrayNum;
+            lVar29 = (longlong)local_150.ArrayNum;
+            uVar14 = local_150.ArrayNum + 1;
+            local_150.ArrayNum = uVar14;
+            if ((uint)local_150.ArrayMax < uVar14) {
+              TArray<int,TSizedDefaultAllocator<32>_>::ResizeGrow(&local_150,iVar17);
+            }
+            FVar23 = (ForElementType<TSubclassOf<AActor>_>)((longlong)FVar23 + 8);
+            *(undefined4 *)((longlong)local_150.AllocatorInstance + lVar29 * 4) = local_158[0];
+            pAVar21 = pAVar19;
+          } while (FVar23 != FVar1);
+        }
+        uVar27 = local_168.ArrayNum - 1;
+        uVar14 = 0;
+        if ((int)uVar27 < local_168.ArrayNum) {
+          uVar14 = ~uVar27 >> 0x1f;
+        }
+        if ((uVar14 == 0) &&
+           (bVar12 = FDebug::CheckVerifyFailedImpl
+                               ("(Index >= 0) & (Index < ArrayNum)",
+                                "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                                ,0x303,unaff_retaddr,
+                                L"Array index out of bounds: %lld from an array of size %lld",
+                                (longlong)(int)uVar27,(longlong)local_168.ArrayNum), bVar12)) {
+          pcVar9 = (code *)swi(3);
+          uVar11 = (*pcVar9)();
+          return (bool)uVar11;
+        }
+        USplineComponent::ClearSplinePoints(this->mSplineComponent,true);
+        this_00 = &this->mChainSplineSegments;
+        TArray<FConveyorChainSplineSegment,TSizedDefaultAllocator<32>_>::SetNumZeroed
+                  (this_00,local_168.ArrayNum,true);
+        local_res10 = 0;
+        uVar14 = local_168.ArrayNum - 1;
+        if (5 < (byte)LogConveyorChain._0_1_) {
+          UE::Logging::Private::BasicLog
+                    ((FLogCategoryBase *)&LogConveyorChain,&::LOG_Static,
+                     local_168._8_8_ & 0xffffffff);
+        }
+        bVar12 = false;
+        iVar17 = local_168.ArrayNum;
+        if (local_168.ArrayNum < 1) {
+          bVar13 = FDebug::CheckVerifyFailedImpl
+                             ("(Index >= 0) & (Index < ArrayNum)",
+                              "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                              ,0x303,unaff_retaddr,
+                              L"Array index out of bounds: %lld from an array of size %lld",0,
+                              (longlong)local_168.ArrayNum);
+          if (bVar13) {
+            pcVar9 = (code *)swi(3);
+            uVar11 = (*pcVar9)();
+            return (bool)uVar11;
+          }
+          iVar17 = local_168.ArrayNum;
+        }
+        local_128 = local_168.AllocatorInstance;
+        fVar3 = (*(AFGBuildableConveyorBase **)local_168.AllocatorInstance)->mSpeed;
+        local_108 = (ForElementType<TSubclassOf<AActor>_>)
+                    ((longlong)local_168.AllocatorInstance + (longlong)iVar17 * 8);
+        if (local_168.AllocatorInstance != local_108) {
+          lVar29 = (longlong)(int)uVar14 << 6;
+          local_res20 = 0;
+          pAVar21 = pAVar26;
+          bVar12 = false;
+          do {
+            pAVar19 = *(AFGBuildableConveyorBase **)local_128;
+            if (fVar3 != pAVar19->mSpeed) {
+              this->mHasVariableSpeedBelts = true;
+            }
+            uVar18 = (uint)pAVar21;
+            uVar15 = 0;
+            uVar27 = uVar15;
+            if ((int)uVar18 < local_150.ArrayNum) {
+              uVar27 = ~uVar18 >> 0x1f;
+            }
+            local_110 = pAVar19;
+            if ((uVar27 == 0) &&
+               (bVar13 = FDebug::CheckVerifyFailedImpl
+                                   ("(Index >= 0) & (Index < ArrayNum)",
+                                    "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                                    ,0x303,unaff_retaddr,
+                                    L"Array index out of bounds: %lld from an array of size %lld",
+                                    (longlong)(int)uVar18,(longlong)local_150.ArrayNum), bVar13)) {
+              pcVar9 = (code *)swi(3);
+              uVar11 = (*pcVar9)();
+              return (bool)uVar11;
+            }
+            iVar17 = (this->mChainSplineSegments).ArrayNum;
+            fVar4 = pAVar19->mLength;
+            uVar18 = ~uVar14 >> 0x1f;
+            fVar5 = *(float *)(local_res20 + (longlong)local_150.AllocatorInstance);
+            uVar27 = uVar15;
+            if ((int)uVar14 < iVar17) {
+              uVar27 = uVar18;
+            }
+            if ((uVar27 == 0) &&
+               (bVar13 = FDebug::CheckVerifyFailedImpl
+                                   ("(Index >= 0) & (Index < ArrayNum)",
+                                    "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                                    ,0x303,unaff_retaddr,
+                                    L"Array index out of bounds: %lld from an array of size %lld",
+                                    (longlong)(int)uVar14,(longlong)iVar17), bVar13)) {
+              pcVar9 = (code *)swi(3);
+              uVar11 = (*pcVar9)();
+              return (bool)uVar11;
+            }
+            FVar7 = this_00->AllocatorInstance;
+            *(AFGBuildableConveyorBase **)(lVar29 + 8 + (longlong)FVar7) = pAVar19;
+            puVar28 = (undefined8 *)((longlong)FVar7 + 0x10 + lVar29);
+            *(AFGConveyorChainActor **)(lVar29 + (longlong)FVar7) = this;
+            if (puVar28 != local_d0) {
+              if ((void *)*puVar28 != (void *)0x0) {
+                FMemory::Free((void *)*puVar28);
+              }
+              *puVar28 = 0;
+              puVar28[1] = 0;
+            }
+            *(undefined4 *)(lVar29 + 0x30 + (longlong)FVar7) = 0;
+            *(undefined8 *)(lVar29 + 0x34 + (longlong)FVar7) = 0xffffffffffffffff;
+            *(undefined4 *)(lVar29 + 0x3c + (longlong)FVar7) = 0xffffffff;
+            auVar10._4_4_ = fVar31;
+            auVar10._0_4_ = fVar5;
+            auVar10._8_4_ = fVar31 + fVar4 + fVar5;
+            auVar10._12_4_ = 0;
+            *(undefined1 (*) [16])(lVar29 + 0x20 + (longlong)FVar7) = auVar10;
+            iVar17 = (this->mChainSplineSegments).ArrayNum;
+            uVar27 = uVar15;
+            if ((int)uVar14 < iVar17) {
+              uVar27 = uVar18;
+            }
+            if ((uVar27 == 0) &&
+               (bVar13 = FDebug::CheckVerifyFailedImpl
+                                   ("(Index >= 0) & (Index < ArrayNum)",
+                                    "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                                    ,0x303,unaff_retaddr,
+                                    L"Array index out of bounds: %lld from an array of size %lld",
+                                    (longlong)(int)uVar14,(longlong)iVar17), bVar13)) {
+              pcVar9 = (code *)swi(3);
+              uVar11 = (*pcVar9)();
+              return (bool)uVar11;
+            }
+            lVar8 = *(longlong *)(lVar29 + 8 + (longlong)this_00->AllocatorInstance);
+            *(uint *)(lVar29 + 0x3c + (longlong)this_00->AllocatorInstance) = uVar14;
+            if (lVar8 != 0) {
+              *(uint *)(lVar8 + 0x6b8) = uVar14;
+            }
+            iVar17 = (this->mChainSplineSegments).ArrayNum;
+            if ((int)uVar14 < iVar17) {
+              uVar15 = uVar18;
+            }
+            if ((uVar15 == 0) &&
+               (bVar13 = FDebug::CheckVerifyFailedImpl
+                                   ("(Index >= 0) & (Index < ArrayNum)",
+                                    "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                                    ,0x303,unaff_retaddr,
+                                    L"Array index out of bounds: %lld from an array of size %lld",
+                                    (longlong)(int)uVar14,(longlong)iVar17), bVar13)) {
+              pcVar9 = (code *)swi(3);
+              uVar11 = (*pcVar9)();
+              return (bool)uVar11;
+            }
+            FConveyorChainSplineSegment::Initialize
+                      ((FConveyorChainSplineSegment *)
+                       ((longlong)(int)uVar14 * 0x40 + (longlong)this_00->AllocatorInstance),
+                       this->mSplineComponent,fVar5);
+            local_res10 = local_res10 + 1;
+            pAVar21 = (AFGBuildableConveyorBase *)(ulonglong)local_res10;
+            local_res20 = local_res20 + 4;
+            bVar12 = (bool)(bVar12 | 0 < (local_110->mAttachedThroughputMonitors).ArrayNum);
+            local_128 = (ForElementType<TSubclassOf<AActor>_>)((longlong)local_128 + 8);
+            uVar14 = uVar14 - 1;
+            lVar29 = lVar29 + -0x40;
+            fVar31 = fVar31 + fVar5 + local_110->mLength;
+          } while (local_128 != local_108);
+        }
+        iVar17 = (this->mChainSplineSegments).ArrayNum;
+        pAVar21 = pAVar26;
+        if (0 < iVar17) {
+          do {
+            iVar17 = (this->mChainSplineSegments).ArrayNum;
+            uVar27 = (uint)pAVar26;
+            uVar14 = 0;
+            if ((int)uVar27 < iVar17) {
+              uVar14 = ~uVar27 >> 0x1f;
+            }
+            if ((uVar14 == 0) &&
+               (bVar13 = FDebug::CheckVerifyFailedImpl
+                                   ("(Index >= 0) & (Index < ArrayNum)",
+                                    "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                                    ,0x303,unaff_retaddr,
+                                    L"Array index out of bounds: %lld from an array of size %lld",
+                                    (longlong)(int)uVar27,(longlong)iVar17), bVar13)) {
+              pcVar9 = (code *)swi(3);
+              uVar11 = (*pcVar9)();
+              return (bool)uVar11;
+            }
+            *(uint *)((longlong)&pAVar21->_padding_ + (longlong)this_00->AllocatorInstance + 4) =
+                 uVar27;
+            pAVar26 = (AFGBuildableConveyorBase *)(ulonglong)(uVar27 + 1);
+            iVar17 = (this->mChainSplineSegments).ArrayNum;
+            pAVar21 = (AFGBuildableConveyorBase *)&pAVar21->_padding_;
+          } while ((int)(uVar27 + 1) < iVar17);
+        }
+        this->mNumChainSegments = iVar17;
+        this->mTotalLength = fVar31;
+        this->mSplineComponent->ReparamStepsPerSegment =
+             this->mConveyorChainSubsystem->mReparamStepsPerSegment;
+        (**(code **)(this->mSplineComponent->_padding_ + 0xa00))();
+        InitializeConveyorItemArray(this);
+        MoveItemsFromBeltsToChain(this);
+        if (bVar12) {
+          FVar1 = (ForElementType<TSubclassOf<AActor>_>)
+                  ((longlong)local_168.AllocatorInstance + (longlong)local_168.ArrayNum * 8);
+          for (FVar23 = local_168.AllocatorInstance; FVar23 != FVar1;
+              FVar23 = (ForElementType<TSubclassOf<AActor>_>)((longlong)FVar23 + 8)) {
+            pAVar26 = *(AFGBuildableConveyorBase **)FVar23;
+            pTVar30 = &pAVar26->mAttachedThroughputMonitors;
+            local_138.ArrayMax = 0;
+            local_138.AllocatorInstance = (ForElementType<TSubclassOf<UFGCategory>_>)0x0;
+            local_138.ArrayNum = 0;
+            if ((&local_138 ==
+                 (TArray<TSubclassOf<UFGCategory>,TSizedDefaultAllocator<32>_> *)pTVar30) &&
+               (bVar12 = FDebug::CheckVerifyFailedImpl
+                                   ("(void*)this != (void*)&Source",
+                                    "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                                    ,0x799,unaff_retaddr,L""), bVar12)) {
+              pcVar9 = (code *)swi(3);
+              uVar11 = (*pcVar9)();
+              return (bool)uVar11;
+            }
+            iVar17 = (pAVar26->mAttachedThroughputMonitors).ArrayNum;
+            if (iVar17 != 0) {
+              uVar14 = local_138.ArrayNum + iVar17;
+              if ((int)uVar14 < 0) {
+                UE::Core::Private::OnInvalidArrayNum((ulonglong)uVar14);
+                pcVar9 = (code *)swi(3);
+                uVar11 = (*pcVar9)();
+                return (bool)uVar11;
+              }
+              if (local_138.ArrayMax < (int)uVar14) {
+                TArray<TSubclassOf<UFGCategory>,TSizedDefaultAllocator<32>_>::ResizeTo
+                          (&local_138,uVar14);
+              }
+              memcpy((undefined8 *)
+                     ((longlong)local_138.AllocatorInstance + (longlong)local_138.ArrayNum * 8),
+                     (void *)pTVar30->AllocatorInstance,(longlong)iVar17 << 3);
+              local_138.ArrayNum = local_138.ArrayNum + iVar17;
+            }
+            FVar2 = (ForElementType<TSubclassOf<UFGCategory>_>)
+                    ((longlong)local_138.AllocatorInstance + (longlong)local_138.ArrayNum * 8);
+            for (FVar24 = local_138.AllocatorInstance; FVar24 != FVar2;
+                FVar24 = (ForElementType<TSubclassOf<UFGCategory>_>)((longlong)FVar24 + 8)) {
+              RegisterConveyorMonitor(this,*(AFGBuildableConveyorMonitor **)FVar24);
+            }
+            if (local_138.AllocatorInstance != (ForElementType<TSubclassOf<UFGCategory>_>)0x0) {
+              FMemory::Free((void *)local_138.AllocatorInstance);
+            }
+          }
+        }
+        fVar31 = GetAvailableSpace(this);
+        this->mCachedAvailableBeltSpace = fVar31;
+        if (local_168.AllocatorInstance != (ForElementType<TSubclassOf<AActor>_>)0x0) {
+          FMemory::Free((void *)local_168.AllocatorInstance);
+        }
+        if (local_150.AllocatorInstance != (ForElementType<int>)0x0) {
+          FMemory::Free((void *)local_150.AllocatorInstance);
+        }
+        goto LAB_180702d77;
+      }
+      local_140 = pAVar21;
+      if (2 < (byte)LogConveyorChain._0_1_) {
+        if (pAVar6 == (AFGBuildableConveyorBase *)0x0) {
+          FVar25 = (ForElementType<wchar_t>)L"nullptr";
+        }
+        else {
+          local_120 = (FName)pAVar6->_padding_;
+          pAVar26 = (AFGBuildableConveyorBase *)&DAT_00000001;
+          FName::ToString(&local_120,local_f0);
+          FVar25 = (ForElementType<wchar_t>)L"";
+          if (local_f0[0].Data.ArrayNum != 0) {
+            FVar25 = local_f0[0].Data.AllocatorInstance;
+          }
+        }
+        FVar22 = (ForElementType<wchar_t>)L"nullptr";
+        if (pAVar19 != (AFGBuildableConveyorBase *)0x0) {
+          local_118 = (FName)pAVar19->_padding_;
+          pAVar26 = (AFGBuildableConveyorBase *)(ulonglong)((uint)pAVar26 | 2);
+          FName::ToString(&local_118,&local_100);
+          FVar22 = (ForElementType<wchar_t>)L"";
+          if (local_100.Data.ArrayNum != 0) {
+            FVar22 = local_100.Data.AllocatorInstance;
+          }
+        }
+        UE::Logging::Private::BasicLog
+                  ((FLogCategoryBase *)&LogConveyorChain,&::LOG_Static,FVar22,FVar25);
+        if ((((ulonglong)pAVar26 & 2) != 0) &&
+           (pAVar26 = (AFGBuildableConveyorBase *)(ulonglong)((uint)pAVar26 & 0xfffffffd),
+           local_100.Data.AllocatorInstance != (ForElementType<wchar_t>)0x0)) {
+          FMemory::Free((void *)local_100.Data.AllocatorInstance);
+        }
+        if ((((ulonglong)pAVar26 & 1) != 0) &&
+           (local_f0[0].Data.AllocatorInstance != (ForElementType<wchar_t>)0x0)) {
+          FMemory::Free((void *)local_f0[0].Data.AllocatorInstance);
+        }
+      }
+      if (local_168.AllocatorInstance != (ForElementType<TSubclassOf<AActor>_>)0x0) {
+        FMemory::Free((void *)local_168.AllocatorInstance);
+      }
+      if (local_150.AllocatorInstance != (ForElementType<int>)0x0) {
+        FMemory::Free((void *)local_150.AllocatorInstance);
+        return false;
+      }
+    }
+    bVar12 = false;
+  }
+  else {
+LAB_180702d77:
+    BuildLUT(this);
+    bVar12 = true;
+  }
+  return bVar12;
+}
+
+
+
+// =========================================================
+// UFGConveyorChainRemoteCallObject::Client_RespondChainItemUpdate_Implementation
+// Entry: 180705030
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+/* WARNING: Enum "EStreamingSourcePriority": Some values do not have unique names */
+
+void __thiscall
+UFGConveyorChainRemoteCallObject::Client_RespondChainItemUpdate_Implementation
+          (UFGConveyorChainRemoteCallObject *this,FConveyorChainItemRPCData *param_1)
+
+{
+  FObjectPtr_u_0 *this_00;
+  int iVar1;
+  bool bVar2;
+  UObject *pUVar3;
+  AFGPlayerController *this_01;
+  UClass *pUVar4;
+  TSubclassOf<UFGRemoteCallObject> TVar5;
+  UFGConveyorChainRemoteCallObject *this_02;
+  UWorld *this_03;
+  longlong lVar6;
+  AFGConveyorChainSubsystem *pAVar7;
+  AFGBuildable *local_res8;
+  FConveyorChainItemRPCData local_38;
+  
+                    /* 0x705030  15532
+                       ?Client_RespondChainItemUpdate_Implementation@UFGConveyorChainRemoteCallObject@@UEAAXAEBUFConveyorChainItemRPCData@@@Z
+                        */
+  if (0 < (this->RequestedItemChainActors).ArrayNum) {
+    pUVar3 = (UObject *)(**(code **)(this->_padding_ + 0x188))();
+    this_01 = (AFGPlayerController *)UGameplayStatics::GetPlayerController(pUVar3,0);
+    if (this_01 != (AFGPlayerController *)0x0) {
+      pUVar4 = AFGPlayerController::GetPrivateStaticClass();
+      iVar1 = (int)pUVar4->_padding_;
+      if ((iVar1 <= *(int *)(this_01->_padding_ + 0x38)) &&
+         ((longlong *)
+          *(undefined1 **)(*(longlong *)(this_01->_padding_ + 0x30) + (longlong)iVar1 * 8) ==
+          &pUVar4->_padding_)) {
+        TVar5.Class.field0_0x0 = (TObjectPtr<UClass>)GetPrivateStaticClass();
+        this_02 = (UFGConveyorChainRemoteCallObject *)
+                  AFGPlayerController::GetRemoteCallObjectOfClass(this_01,TVar5);
+        if (this_02 != (UFGConveyorChainRemoteCallObject *)0x0) {
+          pAVar7 = (AFGConveyorChainSubsystem *)0x0;
+          local_38.ChainActors.AllocatorInstance = (ForElementType<AFGConveyorChainActor_*>)0x0;
+          local_38.ChainActors.ArrayNum = 0;
+          local_38.ChainActors.ArrayMax = 0;
+          local_38.IsServerData = false;
+          local_38.ChainRCO = this_02;
+          this_03 = (UWorld *)(**(code **)(this->_padding_ + 0x188))(this);
+          local_38.PlayerController = UWorld::GetFirstPlayerController(this_03);
+          lVar6 = (**(code **)(this->_padding_ + 0x188))(this);
+          if ((lVar6 != 0) &&
+             (this_00 = (FObjectPtr_u_0 *)(lVar6 + 0x158), this_00->Handle != (UObject *)0x0)) {
+            pUVar4 = AFGGameState::GetPrivateStaticClass();
+            bVar2 = FObjectPtr::IsA((FObjectPtr *)this_00,pUVar4);
+            if ((bVar2) && (this_00->Handle != (UObject *)0x0)) {
+              pAVar7 = *(AFGConveyorChainSubsystem **)(this_00->Handle + 0x25);
+            }
+          }
+          local_res8 = (AFGBuildable *)0x0;
+          local_38.ChainSubsystem = pAVar7;
+          TArray<AFGBuildable_*,TSizedDefaultAllocator<32>_>::Remove
+                    ((TArray<AFGBuildable_*,TSizedDefaultAllocator<32>_> *)
+                     &this->RequestedItemChainActors,&local_res8);
+          TArray<AFGBuildableWire_*,TSizedDefaultAllocator<32>_>::
+          Append<AFGBuildableWire_*,TSizedDefaultAllocator<32>_>
+                    ((TArray<AFGBuildableWire_*,TSizedDefaultAllocator<32>_> *)&local_38,
+                     (TArray<AFGBuildableWire_*,TSizedDefaultAllocator<32>_> *)
+                     &this->RequestedItemChainActors);
+          Server_RequestChainItemUpdate(this_02,&local_38);
+          this_02->HasPendingItemClientRequest = true;
+          if (local_38.ChainActors.AllocatorInstance != (ForElementType<AFGConveyorChainActor_*>)0x0
+             ) {
+            FMemory::Free((void *)local_38.ChainActors.AllocatorInstance);
+          }
+        }
+      }
+    }
+  }
+  return;
+}
+
+
+
+// =========================================================
+// UFGConveyorChainRemoteCallObject::Client_RespondChainSegmentData_Implementation
+// Entry: 1807051a0
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+/* WARNING: Enum "EStreamingSourcePriority": Some values do not have unique names */
+
+void __thiscall
+UFGConveyorChainRemoteCallObject::Client_RespondChainSegmentData_Implementation
+          (UFGConveyorChainRemoteCallObject *this,FConveyorChainSegmentRPCData *param_1)
+
+{
+  int iVar1;
+  UObject *pUVar2;
+  AFGPlayerController *this_00;
+  UClass *pUVar3;
+  TSubclassOf<UFGRemoteCallObject> TVar4;
+  UFGConveyorChainRemoteCallObject *this_01;
+  AFGBuildable *local_res8;
+  FConveyorChainSegmentRPCData local_28;
+  
+                    /* 0x7051a0  15534
+                       ?Client_RespondChainSegmentData_Implementation@UFGConveyorChainRemoteCallObject@@UEAAXAEBUFConveyorChainSegmentRPCData@@@Z
+                        */
+  if (0 < (this->RequestedSegmentChainActors).ArrayNum) {
+    pUVar2 = (UObject *)(**(code **)(this->_padding_ + 0x188))();
+    this_00 = (AFGPlayerController *)UGameplayStatics::GetPlayerController(pUVar2,0);
+    if (this_00 != (AFGPlayerController *)0x0) {
+      pUVar3 = AFGPlayerController::GetPrivateStaticClass();
+      iVar1 = (int)pUVar3->_padding_;
+      if ((iVar1 <= *(int *)(this_00->_padding_ + 0x38)) &&
+         ((longlong *)
+          *(undefined1 **)(*(longlong *)(this_00->_padding_ + 0x30) + (longlong)iVar1 * 8) ==
+          &pUVar3->_padding_)) {
+        TVar4.Class.field0_0x0 = (TObjectPtr<UClass>)GetPrivateStaticClass();
+        this_01 = (UFGConveyorChainRemoteCallObject *)
+                  AFGPlayerController::GetRemoteCallObjectOfClass(this_00,TVar4);
+        if (this_01 != (UFGConveyorChainRemoteCallObject *)0x0) {
+          local_28.ChainActors.AllocatorInstance = (ForElementType<AFGConveyorChainActor_*>)0x0;
+          local_28.ChainActors.ArrayNum = 0;
+          local_28.ChainActors.ArrayMax = 0;
+          local_28.IsServerData = false;
+          local_res8 = (AFGBuildable *)0x0;
+          local_28.ChainRCO = this_01;
+          TArray<AFGBuildable_*,TSizedDefaultAllocator<32>_>::Remove
+                    ((TArray<AFGBuildable_*,TSizedDefaultAllocator<32>_> *)
+                     &this->RequestedSegmentChainActors,&local_res8);
+          TArray<AFGBuildableWire_*,TSizedDefaultAllocator<32>_>::
+          Append<AFGBuildableWire_*,TSizedDefaultAllocator<32>_>
+                    ((TArray<AFGBuildableWire_*,TSizedDefaultAllocator<32>_> *)&local_28,
+                     (TArray<AFGBuildableWire_*,TSizedDefaultAllocator<32>_> *)
+                     &this->RequestedSegmentChainActors);
+          Server_RequestChainSegmentData(this_01,&local_28);
+          this_01->HasPendingSegmentClientRequest = true;
+          if (local_28.ChainActors.AllocatorInstance != (ForElementType<AFGConveyorChainActor_*>)0x0
+             ) {
+            FMemory::Free((void *)local_28.ChainActors.AllocatorInstance);
+          }
+        }
+      }
+    }
+  }
+  return;
+}
+
+
+
+// =========================================================
+// UFGConveyorChainSubsystemReplicationComponent::InitializeAsClient
+// Entry: 180713760
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+/* WARNING: Enum "EStreamingSourcePriority": Some values do not have unique names */
+
+void __thiscall
+UFGConveyorChainSubsystemReplicationComponent::InitializeAsClient
+          (UFGConveyorChainSubsystemReplicationComponent *this)
+
+{
+  FWeakObjectPtr *this_00;
+  undefined8 *puVar1;
+  char cVar2;
+  AFGConveyorChainSubsystem *pAVar3;
+  APlayerController *pAVar4;
+  UReliableMessagingPlayerComponent *pUVar5;
+  __uint64 _Var6;
+  uint uStack_3c;
+  FMRSWRecursiveAccessDetector local_38;
+  undefined8 *local_30;
+  int local_28;
+  FWriteAccessScope local_20;
+  
+                    /* 0x713760  23681
+                       ?InitializeAsClient@UFGConveyorChainSubsystemReplicationComponent@@IEAAXXZ */
+  if ((this->mConveyorChainSubsystem == (AFGConveyorChainSubsystem *)0x0) &&
+     (pAVar3 = AFGConveyorChainSubsystem::Get((UObject *)this),
+     pAVar3 != (AFGConveyorChainSubsystem *)0x0)) {
+    this->mConveyorChainSubsystem = pAVar3;
+    pAVar4 = CastChecked<APlayerController,AActor>((AActor *)this->_padding_);
+    cVar2 = (**(code **)(pAVar4->_padding_ + 0x7b0))(pAVar4);
+    if ((cVar2 != '\0') &&
+       (pUVar5 = UReliableMessagingPlayerComponent::GetFromPlayer(pAVar4),
+       pUVar5 != (UReliableMessagingPlayerComponent *)0x0)) {
+      if (5 < (byte)LogConveyorChainSubsystemReplicationComponent._0_1_) {
+        UE::Logging::Private::BasicLog
+                  ((FLogCategoryBase *)&LogConveyorChainSubsystemReplicationComponent,&::LOG_Static)
+        ;
+      }
+      local_38.State = (atomic<unsigned___int64>)0x0;
+      local_30 = (undefined8 *)0x0;
+      local_28 = 0;
+      TDelegateAccessHandlerBase<FNotThreadSafeDelegateMode>::FWriteAccessScope::FWriteAccessScope
+                (&local_20,&local_38);
+      if ((local_28 != 0) && (local_30 != (undefined8 *)0x0)) {
+        (**(code **)*local_30)(local_30);
+      }
+      if (local_28 != 3) {
+        TSizedHeapAllocator<32,struct_FMemory>::ForAnyElementType::ResizeAllocation
+                  ((ForAnyElementType *)&local_30,0,3,0x10);
+        local_28 = 3;
+      }
+      puVar1 = local_30;
+      *local_30 = &___7__TCommonDelegateInstanceState___A6AXXZUFDefaultDelegateUserPolicy____V__6B_;
+      _Var6 = FDelegateHandle::GenerateNewID();
+      puVar1[2] = _Var6;
+      this_00 = (FWeakObjectPtr *)(puVar1 + 3);
+      *puVar1 = &
+                ___7__TBaseUObjectMethodDelegateInstance__0A_VUFGLocalPlayer____A6AXPEAVUWorld___ZUFDefaultDelegateUserPolicy____V__6B_
+      ;
+      this_00->ObjectIndex = 0;
+      this_00->ObjectSerialNumber = 0;
+      FWeakObjectPtr::operator=(this_00,(UObject *)this);
+      puVar1[4] = HandleRawMessage;
+      puVar1[5] = (ulonglong)uStack_3c << 0x20;
+      TDelegateAccessHandlerBase<FNotThreadSafeDelegateMode>::FWriteAccessScope::~FWriteAccessScope
+                (&local_20);
+      UReliableMessagingPlayerComponent::RegisterMessageHandler(pUVar5,5,&local_38);
+    }
+  }
+  return;
+}
+
+
+
+// =========================================================
+// AFGConveyorChainActor::MoveItemsFromBeltsToChain
+// Entry: 180716de0
+// =========================================================
+
+/* WARNING: Type propagation algorithm not settling */
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+
+void __thiscall AFGConveyorChainActor::MoveItemsFromBeltsToChain(AFGConveyorChainActor *this)
+
+{
+  int *piVar1;
+  float fVar2;
+  float fVar3;
+  float fVar4;
+  int iVar5;
+  ForElementType<FConveyorChainSplineSegment> FVar6;
+  longlong lVar7;
+  ForElementType<FConveyorBeltItem> FVar8;
+  code *pcVar9;
+  bool bVar10;
+  uint uVar11;
+  longlong lVar12;
+  bool bVar13;
+  uint uVar14;
+  FFGDynamicStruct *this_00;
+  uint uVar15;
+  int iVar16;
+  longlong *plVar17;
+  int iVar18;
+  void *unaff_retaddr;
+  int local_res10;
+  uint local_res18;
+  longlong local_88;
+  longlong local_80;
+  
+                    /* 0x716de0  25058  ?MoveItemsFromBeltsToChain@AFGConveyorChainActor@@QEAAXXZ */
+  if (5 < (byte)LogConveyorChain._0_1_) {
+    UE::Logging::Private::BasicLog((FLogCategoryBase *)&LogConveyorChain,&::LOG_Static);
+  }
+  iVar18 = 0;
+  this->mLeadItemIndex = 0;
+  local_res10 = 0;
+  bVar13 = false;
+  local_res18 = 0;
+  if (0 < (this->mChainSplineSegments).ArrayNum) {
+    local_88 = 0;
+    do {
+      iVar16 = (this->mChainSplineSegments).ArrayNum;
+      uVar14 = 0;
+      if ((int)local_res18 < iVar16) {
+        uVar14 = ~local_res18 >> 0x1f;
+      }
+      if ((uVar14 == 0) &&
+         (bVar10 = FDebug::CheckVerifyFailedImpl
+                             ("(Index >= 0) & (Index < ArrayNum)",
+                              "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                              ,0x303,unaff_retaddr,
+                              L"Array index out of bounds: %lld from an array of size %lld",
+                              (longlong)(int)local_res18,(longlong)iVar16), bVar10)) {
+        pcVar9 = (code *)swi(3);
+        (*pcVar9)();
+        return;
+      }
+      FVar6 = (this->mChainSplineSegments).AllocatorInstance;
+      lVar7 = *(longlong *)(local_88 + 8 + (longlong)FVar6);
+      plVar17 = (longlong *)(lVar7 + 0x658);
+      piVar1 = (int *)(lVar7 + 0x660);
+      if ((bVar13) || (0 < *piVar1)) {
+        bVar13 = true;
+      }
+      iVar16 = *piVar1;
+      iVar5 = this->mNumItems;
+      if (5 < (byte)LogConveyorChain._0_1_) {
+        UE::Logging::Private::BasicLog((FLogCategoryBase *)&LogConveyorChain,&::LOG_Static);
+      }
+      if (iVar16 + iVar18 < iVar5) {
+        uVar14 = 0;
+        if (0 < *piVar1) {
+          local_80 = 0;
+          iVar16 = iVar18;
+          do {
+            iVar5 = (this->mConveyorChainItems).ArrayNum;
+            uVar15 = uVar14 + iVar16;
+            uVar11 = 0;
+            if ((int)uVar15 < iVar5) {
+              uVar11 = ~uVar15 >> 0x1f;
+            }
+            if ((uVar11 == 0) &&
+               (bVar10 = FDebug::CheckVerifyFailedImpl
+                                   ("(Index >= 0) & (Index < ArrayNum)",
+                                    "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                                    ,0x303,unaff_retaddr,
+                                    L"Array index out of bounds: %lld from an array of size %lld",
+                                    (longlong)(int)uVar15,(longlong)iVar5), bVar10)) {
+              pcVar9 = (code *)swi(3);
+              (*pcVar9)();
+              return;
+            }
+            FVar8 = (this->mConveyorChainItems).AllocatorInstance;
+            lVar12 = (longlong)(int)uVar15 * 0x38;
+            uVar11 = 0;
+            if ((int)uVar14 < *piVar1) {
+              uVar11 = ~uVar14 >> 0x1f;
+            }
+            if ((uVar11 == 0) &&
+               (bVar10 = FDebug::CheckVerifyFailedImpl
+                                   ("(Index >= 0) & (Index < ArrayNum)",
+                                    "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                                    ,0x303,unaff_retaddr,
+                                    L"Array index out of bounds: %lld from an array of size %lld",
+                                    (longlong)(int)uVar14,(longlong)*piVar1), bVar10)) {
+              pcVar9 = (code *)swi(3);
+              (*pcVar9)();
+              return;
+            }
+            FInventoryItem::SetItemClass
+                      ((FInventoryItem *)((longlong)FVar8 + lVar12),
+                       (TObjectPtr<UClass>)
+                       *(TObjectPtr<UClass> *)
+                        &((TObjectPtr<UClass> *)(*plVar17 + 8 + local_80))->field0_0x0);
+            iVar16 = (this->mConveyorChainItems).ArrayNum;
+            uVar11 = 0;
+            if ((int)uVar15 < iVar16) {
+              uVar11 = ~uVar15 >> 0x1f;
+            }
+            if ((uVar11 == 0) &&
+               (bVar10 = FDebug::CheckVerifyFailedImpl
+                                   ("(Index >= 0) & (Index < ArrayNum)",
+                                    "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                                    ,0x303,unaff_retaddr,
+                                    L"Array index out of bounds: %lld from an array of size %lld",
+                                    (longlong)(int)uVar15,(longlong)iVar16), bVar10)) {
+              pcVar9 = (code *)swi(3);
+              (*pcVar9)();
+              return;
+            }
+            FVar8 = (this->mConveyorChainItems).AllocatorInstance;
+            uVar11 = 0;
+            if ((int)uVar14 < *piVar1) {
+              uVar11 = ~uVar14 >> 0x1f;
+            }
+            if ((uVar11 == 0) &&
+               (bVar10 = FDebug::CheckVerifyFailedImpl
+                                   ("(Index >= 0) & (Index < ArrayNum)",
+                                    "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                                    ,0x303,unaff_retaddr,
+                                    L"Array index out of bounds: %lld from an array of size %lld",
+                                    (longlong)(int)uVar14,(longlong)*piVar1), bVar10)) {
+              pcVar9 = (code *)swi(3);
+              (*pcVar9)();
+              return;
+            }
+            FInventoryItem::SetItemState
+                      ((FInventoryItem *)(lVar12 + (longlong)FVar8),
+                       (FFGDynamicStruct *)((longlong)(int)uVar14 * 0x38 + *plVar17 + 0x10));
+            uVar11 = 0;
+            if ((int)uVar14 < *piVar1) {
+              uVar11 = ~uVar14 >> 0x1f;
+            }
+            if ((uVar11 == 0) &&
+               (bVar10 = FDebug::CheckVerifyFailedImpl
+                                   ("(Index >= 0) & (Index < ArrayNum)",
+                                    "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                                    ,0x303,unaff_retaddr,
+                                    L"Array index out of bounds: %lld from an array of size %lld",
+                                    (longlong)(int)uVar14,(longlong)*piVar1), bVar10)) {
+              pcVar9 = (code *)swi(3);
+              (*pcVar9)();
+              return;
+            }
+            fVar2 = *(float *)(local_88 + 0x24 + (longlong)FVar6);
+            fVar3 = *(float *)(local_88 + 0x20 + (longlong)FVar6);
+            iVar16 = (this->mConveyorChainItems).ArrayNum;
+            fVar4 = *(float *)(*plVar17 + 0x28 + local_80);
+            uVar11 = 0;
+            if ((int)(uVar14 + local_res10) < iVar16) {
+              uVar11 = ~(uVar14 + local_res10) >> 0x1f;
+            }
+            if ((uVar11 == 0) &&
+               (bVar10 = FDebug::CheckVerifyFailedImpl
+                                   ("(Index >= 0) & (Index < ArrayNum)",
+                                    "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                                    ,0x303,unaff_retaddr,
+                                    L"Array index out of bounds: %lld from an array of size %lld",
+                                    (longlong)(int)(uVar14 + local_res10),(longlong)iVar16), bVar10)
+               ) {
+              pcVar9 = (code *)swi(3);
+              (*pcVar9)();
+              return;
+            }
+            uVar14 = uVar14 + 1;
+            lVar12 = (longlong)iVar18 * 0x38 + local_80;
+            local_80 = local_80 + 0x38;
+            *(float *)(lVar12 + 0x28 + (longlong)(this->mConveyorChainItems).AllocatorInstance) =
+                 fVar2 + fVar3 + fVar4;
+            iVar5 = *piVar1;
+            iVar16 = local_res10;
+          } while ((int)uVar14 < iVar5);
+          iVar18 = local_res10;
+          if (0 < iVar5) {
+            *(int *)(local_88 + 0x34 + (longlong)FVar6) = local_res10;
+            *(int *)(local_88 + 0x38 + (longlong)FVar6) = iVar5 + -1 + local_res10;
+            lVar12 = *(longlong *)(local_88 + 8 + (longlong)FVar6);
+            iVar18 = local_res10 + *(int *)(lVar7 + 0x660);
+            iVar16 = *(int *)(lVar12 + 0x660);
+            if (iVar16 != 0) {
+              this_00 = (FFGDynamicStruct *)(*(longlong *)(lVar12 + 0x658) + 0x10);
+              do {
+                FFGDynamicStruct::~FFGDynamicStruct(this_00);
+                this_00 = (FFGDynamicStruct *)&this_00[3].StructInstance;
+                iVar16 = iVar16 + -1;
+              } while (iVar16 != 0);
+            }
+            *(undefined4 *)(lVar12 + 0x660) = 0;
+            local_res10 = iVar18;
+            if (*(int *)(lVar12 + 0x664) != 0) {
+              TArray<FConveyorBeltItem,TSizedDefaultAllocator<32>_>::ResizeTo
+                        ((TArray<FConveyorBeltItem,TSizedDefaultAllocator<32>_> *)(lVar12 + 0x658),0
+                        );
+            }
+            goto LAB_1807172d2;
+          }
+        }
+        *(undefined8 *)(local_88 + 0x34 + (longlong)FVar6) = 0xffffffffffffffff;
+      }
+LAB_1807172d2:
+      local_res18 = local_res18 + 1;
+      local_88 = local_88 + 0x40;
+    } while ((int)local_res18 < (this->mChainSplineSegments).ArrayNum);
+    if (bVar13) {
+      this->mFirstItemUpdate = true;
+      this->mTailItemIndex = iVar18 + -1;
+      return;
+    }
+  }
+  this->mLeadItemIndex = -1;
+  this->mTailItemIndex = -1;
+  return;
+}
+
+
+
+// =========================================================
+// AFGConveyorChainActor::NetUpdateBuildSpline
+// Entry: 18071dda0
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+
+void __thiscall AFGConveyorChainActor::NetUpdateBuildSpline(AFGConveyorChainActor *this)
+
+{
+  TObjectPtr<AGameStateBase> *this_00;
+  FSplinePointData *pFVar1;
+  int iVar2;
+  USplineComponent *this_01;
+  code *pcVar3;
+  bool bVar4;
+  UWorld *pUVar5;
+  UClass *pUVar6;
+  FSplinePointData *pFVar7;
+  int iVar8;
+  ForElementType<wchar_t> FVar9;
+  longlong lVar10;
+  longlong lVar11;
+  undefined8 *puVar12;
+  void *unaff_retaddr;
+  FName local_res8;
+  FString local_38;
+  
+                    /* 0x71dda0  25438  ?NetUpdateBuildSpline@AFGConveyorChainActor@@QEAAXXZ */
+  if (5 < (byte)LogConveyorChain._0_1_) {
+    local_res8 = (FName)this->_padding_;
+    FName::ToString(&local_res8,&local_38);
+    FVar9 = (ForElementType<wchar_t>)L"";
+    if (local_38.Data.ArrayNum != 0) {
+      FVar9 = local_38.Data.AllocatorInstance;
+    }
+    UE::Logging::Private::BasicLog((FLogCategoryBase *)&LogConveyorChain,&::LOG_Static,FVar9);
+    if (local_38.Data.AllocatorInstance != (ForElementType<wchar_t>)0x0) {
+      FMemory::Free((void *)local_38.Data.AllocatorInstance);
+    }
+  }
+  USplineComponent::ClearSplinePoints(this->mSplineComponent,true);
+  iVar8 = (this->mChainSplineSegments).ArrayNum + -1;
+  if (-1 < iVar8) {
+    lVar11 = (longlong)iVar8;
+    lVar10 = lVar11 << 6;
+    do {
+      iVar2 = (this->mChainSplineSegments).ArrayNum;
+      if ((iVar2 <= iVar8) &&
+         (bVar4 = FDebug::CheckVerifyFailedImpl
+                            ("(Index >= 0) & (Index < ArrayNum)",
+                             "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                             ,0x303,unaff_retaddr,
+                             L"Array index out of bounds: %lld from an array of size %lld",lVar11,
+                             (longlong)iVar2), bVar4)) {
+        pcVar3 = (code *)swi(3);
+        (*pcVar3)();
+        return;
+      }
+      this_01 = this->mSplineComponent;
+      puVar12 = (undefined8 *)((longlong)(this->mChainSplineSegments).AllocatorInstance + lVar10);
+      *puVar12 = this;
+      pFVar7 = (FSplinePointData *)puVar12[2];
+      pFVar1 = pFVar7 + *(int *)(puVar12 + 3);
+      for (; pFVar7 != pFVar1; pFVar7 = pFVar7 + 1) {
+        USplineComponent::AddSplinePointFromData(this_01,pFVar7,World,false);
+      }
+      lVar11 = lVar11 + -1;
+      *(undefined8 *)((longlong)puVar12 + 0x34) = 0xffffffffffffffff;
+      lVar10 = lVar10 + -0x40;
+      iVar8 = iVar8 + -1;
+    } while (-1 < iVar8);
+  }
+  (**(code **)(this->mSplineComponent->_padding_ + 0xa00))();
+  this->mNumChainSegments = (this->mChainSplineSegments).ArrayNum;
+  BuildLUT(this);
+  pUVar5 = AActor::GetWorld((AActor *)this);
+  if ((pUVar5 != (UWorld *)0x0) &&
+     (this_00 = &pUVar5->GameState, (this_00->field0_0x0).DebugPtr != (AGameStateBase *)0x0)) {
+    pUVar6 = AFGGameState::GetPrivateStaticClass();
+    bVar4 = FObjectPtr::IsA((FObjectPtr *)this_00,pUVar6);
+    if ((bVar4) && ((this_00->field0_0x0).DebugPtr != (AGameStateBase *)0x0)) {
+      AFGConveyorChainSubsystem::NotifyChainReceiveSegmentUpdate
+                (*(AFGConveyorChainSubsystem **)
+                  &(this_00->field0_0x0).DebugPtr[1].PlayerArray.ArrayNum,this);
+      return;
+    }
+  }
+  AFGConveyorChainSubsystem::NotifyChainReceiveSegmentUpdate((AFGConveyorChainSubsystem *)0x0,this);
+  return;
+}
+
+
+
+// =========================================================
+// AFGConveyorChainSubsystem::NotifyChainNeedsItemUpdate
+// Entry: 18071dfd0
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+
+void __thiscall
+AFGConveyorChainSubsystem::NotifyChainNeedsItemUpdate
+          (AFGConveyorChainSubsystem *this,AFGConveyorChainActor *param_1)
+
+{
+  AFGBuildableBlueprintDesigner *local_res10 [3];
+  
+                    /* 0x71dfd0  25473
+                       ?NotifyChainNeedsItemUpdate@AFGConveyorChainSubsystem@@QEAAXPEAVAFGConveyorChainActor@@@Z
+                       0x71dfd0  28090
+                       ?RegisterDroneMovement@AFGDroneSubsystem@@QEAAXPEAVUFGDroneMovementComponent@@@Z
+                        */
+  local_res10[0] = (AFGBuildableBlueprintDesigner *)param_1;
+  TArray<AFGBuildableBlueprintDesigner_*,TSizedDefaultAllocator<32>_>::
+  AddUniqueImpl<AFGBuildableBlueprintDesigner_*_const_&>
+            ((TArray<AFGBuildableBlueprintDesigner_*,TSizedDefaultAllocator<32>_> *)
+             &this->mChainsNeedingItemUpdate,local_res10);
+  return;
+}
+
+
+
+// =========================================================
+// AFGConveyorChainSubsystem::NotifyChainNeedsSegmentUpdate
+// Entry: 18071dff0
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+
+void __thiscall
+AFGConveyorChainSubsystem::NotifyChainNeedsSegmentUpdate
+          (AFGConveyorChainSubsystem *this,AFGConveyorChainActor *param_1)
+
+{
+  AFGBuildableBlueprintDesigner *local_res10 [3];
+  
+                    /* 0x71dff0  25474
+                       ?NotifyChainNeedsSegmentUpdate@AFGConveyorChainSubsystem@@QEAAXPEAVAFGConveyorChainActor@@@Z
+                       0x71dff0  28089
+                       ?RegisterDrone@AFGDroneSubsystem@@QEAAXPEAVAFGDroneVehicle@@@Z */
+  local_res10[0] = (AFGBuildableBlueprintDesigner *)param_1;
+  TArray<AFGBuildableBlueprintDesigner_*,TSizedDefaultAllocator<32>_>::
+  AddUniqueImpl<AFGBuildableBlueprintDesigner_*_const_&>
+            ((TArray<AFGBuildableBlueprintDesigner_*,TSizedDefaultAllocator<32>_> *)
+             &this->mChainsNeedingSegmentUpdate,local_res10);
+  return;
+}
+
+
+
+// =========================================================
+// AFGConveyorChainSubsystem::NotifyChainReceiveSegmentUpdate
+// Entry: 18071e010
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+
+void __thiscall
+AFGConveyorChainSubsystem::NotifyChainReceiveSegmentUpdate
+          (AFGConveyorChainSubsystem *this,AFGConveyorChainActor *param_1)
+
+{
+  TArray<AFGConveyorChainActor_*,TSizedDefaultAllocator<32>_> *this_00;
+  int iVar1;
+  ForElementType<AFGConveyorChainActor_*> FVar2;
+  code *pcVar3;
+  bool bVar4;
+  longlong lVar5;
+  void *unaff_retaddr;
+  AFGBuildableBlueprintDesigner *local_res10;
+  
+                    /* 0x71e010  25475
+                       ?NotifyChainReceiveSegmentUpdate@AFGConveyorChainSubsystem@@QEAAXPEAVAFGConveyorChainActor@@@Z
+                        */
+  if (param_1 != (AFGConveyorChainActor *)0x0) {
+    local_res10 = (AFGBuildableBlueprintDesigner *)param_1;
+    TArray<AFGBuildable_*,TSizedDefaultAllocator<32>_>::Remove
+              ((TArray<AFGBuildable_*,TSizedDefaultAllocator<32>_> *)
+               &this->mPendingSegmentUpdateRequest,(AFGBuildable **)&local_res10);
+    this_00 = &this->mSegmentUpdatedReceived;
+    FVar2 = this_00->AllocatorInstance;
+    if (((ulonglong)FVar2 <= &local_res10) &&
+       (lVar5 = (longlong)(this->mSegmentUpdatedReceived).ArrayMax,
+       &local_res10 < (AFGBuildableBlueprintDesigner **)((longlong)FVar2 + lVar5 * 8))) {
+      bVar4 = FDebug::CheckVerifyFailedImpl
+                        ("Addr < GetData() || Addr >= (GetData() + ArrayMax)",
+                         "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                         ,0x63e,unaff_retaddr,
+                         L"Attempting to use a container element (%p) which already comes from the container being modified (%p, ArrayMax: %lld, ArrayNum: %lld, SizeofElement: %d)!"
+                         ,&local_res10,FVar2,lVar5,
+                         (longlong)(this->mSegmentUpdatedReceived).ArrayNum,8);
+      if (bVar4) {
+        pcVar3 = (code *)swi(3);
+        (*pcVar3)();
+        return;
+      }
+    }
+    iVar1 = (this->mSegmentUpdatedReceived).ArrayNum;
+    (this->mSegmentUpdatedReceived).ArrayNum = iVar1 + 1U;
+    if ((uint)(this->mSegmentUpdatedReceived).ArrayMax < iVar1 + 1U) {
+      TArray<TSubclassOf<AActor>,TSizedDefaultAllocator<32>_>::ResizeGrow
+                ((TArray<TSubclassOf<AActor>,TSizedDefaultAllocator<32>_> *)this_00,iVar1);
+    }
+    *(AFGBuildableBlueprintDesigner **)((longlong)this_00->AllocatorInstance + (longlong)iVar1 * 8)
+         = local_res10;
+    TArray<AFGBuildableBlueprintDesigner_*,TSizedDefaultAllocator<32>_>::
+    AddUniqueImpl<AFGBuildableBlueprintDesigner_*_const_&>
+              ((TArray<AFGBuildableBlueprintDesigner_*,TSizedDefaultAllocator<32>_> *)
+               &this->mChainsNeedingItemUpdate,&local_res10);
+  }
+  return;
+}
+
+
+
+// =========================================================
+// AFGConveyorChainSubsystem::NotifyChainReceivedItemUpdate
+// Entry: 18071e110
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+
+void __thiscall
+AFGConveyorChainSubsystem::NotifyChainReceivedItemUpdate
+          (AFGConveyorChainSubsystem *this,AFGConveyorChainActor *param_1)
+
+{
+  AFGBuildable *local_res10 [3];
+  
+                    /* 0x71e110  25476
+                       ?NotifyChainReceivedItemUpdate@AFGConveyorChainSubsystem@@QEAAXPEAVAFGConveyorChainActor@@@Z
+                        */
+  local_res10[0] = (AFGBuildable *)param_1;
+  TArray<AFGBuildable_*,TSizedDefaultAllocator<32>_>::Remove
+            ((TArray<AFGBuildable_*,TSizedDefaultAllocator<32>_> *)&this->mPendingItemUpdateRequest,
+             local_res10);
+  return;
+}
+
+
+
+// =========================================================
+// AFGConveyorChainActor::PostLoadGame_Implementation
+// Entry: 180721510
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+
+void __thiscall
+AFGConveyorChainActor::PostLoadGame_Implementation
+          (AFGConveyorChainActor *this,int param_1,int param_2)
+
+{
+  float *pfVar1;
+  FSplinePointData *pFVar2;
+  int iVar3;
+  longlong lVar4;
+  longlong lVar5;
+  code *pcVar6;
+  bool bVar7;
+  bool bVar8;
+  FSplinePointData *pFVar9;
+  longlong lVar10;
+  ForElementType<wchar_t> FVar11;
+  longlong lVar12;
+  int iVar13;
+  float fVar14;
+  float fVar15;
+  float fVar16;
+  void *unaff_retaddr;
+  FName local_res8;
+  FString local_58 [3];
+  
+                    /* 0x721510  27410
+                       ?PostLoadGame_Implementation@AFGConveyorChainActor@@UEAAXHH@Z */
+  SanitizeItemsFromLoad((AFGConveyorChainActor *)&this[-1]._padding_);
+  bVar7 = false;
+  *(int *)&this->_padding_ = (int)this->_padding_;
+  USplineComponent::ClearSplinePoints((USplineComponent *)this->_padding_,true);
+  iVar13 = (int)this->_padding_ + -1;
+  fVar15 = 0.0;
+  if (-1 < iVar13) {
+    lVar12 = (longlong)iVar13;
+    lVar10 = lVar12 << 6;
+    do {
+      iVar3 = (int)this->_padding_;
+      if ((iVar3 <= iVar13) &&
+         (bVar8 = FDebug::CheckVerifyFailedImpl
+                            ("(Index >= 0) & (Index < ArrayNum)",
+                             "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                             ,0x303,unaff_retaddr,
+                             L"Array index out of bounds: %lld from an array of size %lld",lVar12,
+                             (longlong)iVar3), bVar8)) {
+        pcVar6 = (code *)swi(3);
+        (*pcVar6)();
+        return;
+      }
+      lVar4 = this->_padding_;
+      lVar5 = *(longlong *)(lVar10 + 8 + lVar4);
+      if (lVar5 == 0) {
+        bVar7 = true;
+      }
+      else {
+        fVar14 = *(float *)(lVar5 + 0x5f4);
+        fVar16 = fVar14;
+        if ((fVar15 != 0.0) && (fVar16 = fVar15, fVar14 != fVar15)) {
+          *(undefined1 *)((longlong)&this->_padding_ + 1) = 1;
+        }
+        *(float *)(lVar10 + 0x30 + lVar4) = fVar14;
+        pFVar9 = *(FSplinePointData **)(lVar10 + 0x10 + lVar4);
+        pFVar2 = pFVar9 + *(int *)(lVar10 + 0x18 + lVar4);
+        for (; pFVar9 != pFVar2; pFVar9 = pFVar9 + 1) {
+          USplineComponent::AddSplinePointFromData
+                    ((USplineComponent *)this->_padding_,pFVar9,World,false);
+        }
+        *(undefined4 *)(*(longlong *)(lVar10 + 8 + lVar4) + 0x6b8) =
+             *(undefined4 *)(lVar10 + 0x3c + lVar4);
+        fVar15 = fVar16;
+      }
+      lVar12 = lVar12 + -1;
+      lVar10 = lVar10 + -0x40;
+      iVar13 = iVar13 + -1;
+    } while (-1 < iVar13);
+    if (bVar7) {
+      if (4 < (byte)LogConveyorChain._0_1_) {
+        local_res8 = (FName)this[-1]._padding_;
+        FName::ToString(&local_res8,local_58);
+        FVar11 = (ForElementType<wchar_t>)L"";
+        if (local_58[0].Data.ArrayNum != 0) {
+          FVar11 = local_58[0].Data.AllocatorInstance;
+        }
+        UE::Logging::Private::BasicLog((FLogCategoryBase *)&LogConveyorChain,&::LOG_Static,FVar11);
+        if (local_58[0].Data.AllocatorInstance != (ForElementType<wchar_t>)0x0) {
+          FMemory::Free((void *)local_58[0].Data.AllocatorInstance);
+        }
+      }
+      MoveItemsFromChainToBelts((AFGConveyorChainActor *)&this[-1]._padding_);
+      AActor::Destroy((AActor *)&this[-1]._padding_,false,true);
+      return;
+    }
+  }
+  (**(code **)(*(longlong *)this->_padding_ + 0xa00))();
+  lVar10 = this->_padding_;
+  lVar12 = this->_padding_;
+  this->_padding_ = lVar10;
+  this->_padding_ = lVar12;
+  this->_padding_ = *(longlong *)(lVar12 + 0x678);
+  this->_padding_ = *(longlong *)(lVar10 + 0x680);
+  fVar15 = *(float *)(lVar10 + 0x5f4);
+  do {
+    pfVar1 = (float *)(lVar10 + 0x5f4);
+    lVar10 = *(longlong *)(lVar10 + 0x690);
+    fVar14 = *pfVar1;
+    if (fVar15 <= *pfVar1) {
+      fVar14 = fVar15;
+    }
+    fVar15 = fVar14;
+  } while (lVar10 != 0);
+  *(float *)((longlong)&this->_padding_ + 4) = fVar14;
+  fVar15 = GetAvailableSpace((AFGConveyorChainActor *)&this[-1]._padding_);
+  *(float *)&this->_padding_ = fVar15;
+  return;
+}
+
+
+
+// =========================================================
+// UFGConveyorChainSubsystemReplicationComponent::ReceiveInitialReplicationData
+// Entry: 180721fe0
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+
+void __thiscall
+UFGConveyorChainSubsystemReplicationComponent::ReceiveInitialReplicationData
+          (UFGConveyorChainSubsystemReplicationComponent *this,
+          FConveyorChainSubsystemInitialReplicationMessage *param_1)
+
+{
+  code *pcVar1;
+  
+                    /* 0x721fe0  28020
+                       ?ReceiveInitialReplicationData@UFGConveyorChainSubsystemReplicationComponent@@IEBAXAEBUFConveyorChainSubsystemInitialReplicationMessage@@@Z
+                        */
+  if (this->mConveyorChainSubsystem == (AFGConveyorChainSubsystem *)0x0) {
+    `UFGConveyorChainSubsystemReplicationComponent::ReceiveInitialReplicationData'::__l6::Impl::
+    ExecCheckImplInternal();
+    pcVar1 = (code *)swi(3);
+    (*pcVar1)();
+    return;
+  }
+  if (5 < (byte)LogConveyorChainSubsystemReplicationComponent._0_1_) {
+    UE::Logging::Private::BasicLog
+              ((FLogCategoryBase *)&LogConveyorChainSubsystemReplicationComponent,&::LOG_Static);
+  }
+  FHotbar::operator=((FHotbar *)&this->mConveyorChainSubsystem->mAllItemDescriptors,
+                     (FHotbar *)param_1);
+  if (4 < (byte)LogConveyorChain._0_1_) {
+    UE::Logging::Private::BasicLog((FLogCategoryBase *)&LogConveyorChain,&::LOG_Static);
+  }
+  return;
+}
+
+
+
+// =========================================================
+// AFGConveyorChainActor::RegisterWithSubsystem
+// Entry: 180722dc0
+// =========================================================
+
+/* WARNING: Function: __security_check_cookie replaced with injection: security_check_cookie */
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+
+void __thiscall AFGConveyorChainActor::RegisterWithSubsystem(AFGConveyorChainActor *this)
+
+{
+  FWeakObjectPtr *this_00;
+  TObjectPtr<AGameStateBase> *this_01;
+  AFGConveyorChainSubsystem *this_02;
+  bool bVar1;
+  UWorld *pUVar2;
+  UClass *pUVar3;
+  FTimerManager *this_03;
+  __uint64 _Var4;
+  longlong *plVar5;
+  undefined8 *puVar6;
+  int iVar7;
+  undefined1 auStack_e8 [32];
+  undefined8 local_c8;
+  int iStack_c0;
+  undefined4 uStack_bc;
+  longlong *local_b8;
+  int local_b0;
+  undefined4 local_ac;
+  undefined1 local_a8 [16];
+  undefined8 *local_98;
+  int local_90;
+  TDelegateAccessHandlerBase<FNotThreadSafeDelegateMode> local_88;
+  longlong local_80;
+  undefined1 local_78 [32];
+  longlong *local_58;
+  longlong local_48 [4];
+  ulonglong local_28;
+  
+                    /* 0x722dc0  28153  ?RegisterWithSubsystem@AFGConveyorChainActor@@QEAAXXZ */
+  local_28 = __security_cookie.value ^ (ulonglong)auStack_e8;
+  pUVar2 = AActor::GetWorld((AActor *)this);
+  if ((pUVar2 != (UWorld *)0x0) &&
+     (this_01 = &pUVar2->GameState, (this_01->field0_0x0).DebugPtr != (AGameStateBase *)0x0)) {
+    pUVar3 = AFGGameState::GetPrivateStaticClass();
+    bVar1 = FObjectPtr::IsA((FObjectPtr *)this_01,pUVar3);
+    if ((bVar1) &&
+       (((this_01->field0_0x0).DebugPtr != (AGameStateBase *)0x0 &&
+        (this_02 = *(AFGConveyorChainSubsystem **)
+                    &(this_01->field0_0x0).DebugPtr[1].PlayerArray.ArrayNum,
+        this_02 != (AFGConveyorChainSubsystem *)0x0)))) {
+      this->mConveyorChainSubsystem = this_02;
+      AFGConveyorChainSubsystem::AddConveyorChain(this_02,this);
+      return;
+    }
+  }
+  this_03 = AActor::GetWorldTimerManager((AActor *)this);
+  uStack_bc = local_ac;
+  iStack_c0 = 0;
+  local_c8 = RegisterWithSubsystem;
+  local_b8 = (longlong *)0x0;
+  local_b0 = 0;
+  TSizedHeapAllocator<32,struct_FMemory>::ForAnyElementType::ResizeAllocation
+            ((ForAnyElementType *)&local_b8,0,3,0x10);
+  plVar5 = local_b8;
+  local_b0 = 3;
+  *local_b8 = (longlong)
+              &___7__TCommonDelegateInstanceState___A6AXXZUFDefaultDelegateUserPolicy____V__6B_;
+  _Var4 = FDelegateHandle::GenerateNewID();
+  plVar5[2] = _Var4;
+  this_00 = (FWeakObjectPtr *)(plVar5 + 3);
+  *plVar5 = (longlong)
+            &
+            ___7__TBaseUObjectMethodDelegateInstance__0A_VUFGInventoryComponent____A6AXXZUFDefaultDelegateUserPolicy____V__6B_
+  ;
+  this_00->ObjectIndex = 0;
+  this_00->ObjectSerialNumber = 0;
+  FWeakObjectPtr::operator=(this_00,(UObject *)this);
+  *(undefined4 *)(plVar5 + 4) = (undefined4)local_c8;
+  *(undefined4 *)((longlong)plVar5 + 0x24) = local_c8._4_4_;
+  *(int *)(plVar5 + 5) = iStack_c0;
+  *(undefined4 *)((longlong)plVar5 + 0x2c) = uStack_bc;
+  local_c8 = (code *)0x0;
+  local_98 = (undefined8 *)0x0;
+  local_90 = 0;
+  iStack_c0 = 0;
+  puVar6 = (undefined8 *)0x0;
+  iVar7 = 0;
+  if ((local_b0 != 0) && (puVar6 = (undefined8 *)0x0, local_b8 != (longlong *)0x0)) {
+    (**(code **)(*local_b8 + 0x40))();
+    puVar6 = (undefined8 *)local_c8;
+    iVar7 = iStack_c0;
+  }
+  iStack_c0 = 0;
+  local_c8 = (code *)0x0;
+  if (local_90 == 0) {
+LAB_180722f48:
+    if (local_98 != (undefined8 *)0x0) {
+      FMemory::Free(local_98);
+    }
+  }
+  else if (local_98 != (undefined8 *)0x0) {
+    (**(code **)*local_98)(local_98);
+    TSizedHeapAllocator<32,struct_FMemory>::ForAnyElementType::ResizeAllocation
+              ((ForAnyElementType *)&local_98,0,0,0x10);
+    local_90 = 0;
+    goto LAB_180722f48;
+  }
+  local_98 = puVar6;
+  local_90 = iVar7;
+  if (iStack_c0 == 0) {
+LAB_180722f90:
+    if (local_c8 != (code *)0x0) {
+      FMemory::Free(local_c8);
+    }
+  }
+  else if (local_c8 != (code *)0x0) {
+    (*(code *)**(undefined8 **)local_c8)();
+    TSizedHeapAllocator<32,struct_FMemory>::ForAnyElementType::ResizeAllocation
+              ((ForAnyElementType *)&local_c8,0,0,0x10);
+    iStack_c0 = 0;
+    goto LAB_180722f90;
+  }
+  local_88.AccessDetector.State = (FMRSWRecursiveAccessDetector)(atomic<unsigned___int64>)0x0;
+  local_80 = 0;
+  local_78._0_8_ = 0;
+  local_78._16_8_ = 0;
+  local_58 = (longlong *)0x0;
+  FTimerManager::InternalSetTimerForNextTick(this_03,(FTimerUnifiedDelegate *)local_a8);
+  if (local_78._16_8_ != 0) {
+    plVar5 = local_48;
+    if (local_58 != (longlong *)0x0) {
+      plVar5 = local_58;
+    }
+    (**(code **)(*plVar5 + 0x10))();
+  }
+  TDelegateAccessHandlerBase<FNotThreadSafeDelegateMode>::
+  ~TDelegateAccessHandlerBase<FNotThreadSafeDelegateMode>(&local_88);
+  if (local_90 != 0) {
+    if (local_98 == (undefined8 *)0x0) goto LAB_18072302a;
+    (**(code **)*local_98)();
+    TSizedHeapAllocator<32,struct_FMemory>::ForAnyElementType::ResizeAllocation
+              ((ForAnyElementType *)&local_98,0,0,0x10);
+    local_90 = 0;
+  }
+  if (local_98 != (undefined8 *)0x0) {
+    FMemory::Free(local_98);
+  }
+LAB_18072302a:
+  if ((local_b0 != 0) && (local_b8 != (longlong *)0x0)) {
+    (**(code **)*local_b8)();
+    TSizedHeapAllocator<32,struct_FMemory>::ForAnyElementType::ResizeAllocation
+              ((ForAnyElementType *)&local_b8,0,0,0x10);
+    local_b0 = 0;
+  }
+  if (local_b8 != (longlong *)0x0) {
+    FMemory::Free(local_b8);
+  }
+  return;
+}
+
+
+
+// =========================================================
+// UFGConveyorChainSubsystemReplicationComponent::SendInitialReplicationData
+// Entry: 1807258e0
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+
+void __thiscall
+UFGConveyorChainSubsystemReplicationComponent::SendInitialReplicationData
+          (UFGConveyorChainSubsystemReplicationComponent *this)
+
+{
+  uint uVar1;
+  ForElementType<TSubclassOf<UFGItemDescriptor>_> _Src;
+  code *pcVar2;
+  TArray<TSubclassOf<UFGItemDescriptor>,TSizedDefaultAllocator<32>_> *pTVar3;
+  FString *pFVar4;
+  wchar_t *pwVar5;
+  TArray<TObjectPtr<UAkAudioEvent>,TSizedDefaultAllocator<32>_> *local_res8;
+  TArray<TObjectPtr<UAkAudioEvent>,TSizedDefaultAllocator<32>_> local_38;
+  code *local_28;
+  TArray<TObjectPtr<UAkAudioEvent>,TSizedDefaultAllocator<32>_> **local_20;
+  FString local_18;
+  
+                    /* 0x7258e0  28669
+                       ?SendInitialReplicationData@UFGConveyorChainSubsystemReplicationComponent@@IEAAXXZ
+                        */
+  if (this->mConveyorChainSubsystem != (AFGConveyorChainSubsystem *)0x0) {
+    local_38.AllocatorInstance = (ForElementType<TObjectPtr<UAkAudioEvent>_>)0x0;
+    local_38.ArrayNum = 0;
+    local_38.ArrayMax = 0;
+    pTVar3 = &this->mConveyorChainSubsystem->mAllItemDescriptors;
+    if (&local_38 != (TArray<TObjectPtr<UAkAudioEvent>,TSizedDefaultAllocator<32>_> *)pTVar3) {
+      _Src = pTVar3->AllocatorInstance;
+      uVar1 = (this->mConveyorChainSubsystem->mAllItemDescriptors).ArrayNum;
+      local_38.ArrayMax = 0;
+      local_38.ArrayNum = uVar1;
+      if (uVar1 != 0) {
+        TArray<TObjectPtr<UAkAudioEvent>,TSizedDefaultAllocator<32>_>::ResizeForCopy
+                  (&local_38,uVar1,0);
+        memcpy((void *)local_38.AllocatorInstance,(void *)_Src,(longlong)(int)uVar1 << 3);
+      }
+    }
+    if (5 < (byte)LogConveyorChainSubsystemReplicationComponent._0_1_) {
+      pFVar4 = UObjectBaseUtility::GetPathName
+                         ((UObjectBaseUtility *)this,&local_18,(UObject *)this->_padding_);
+      if ((pFVar4->Data).ArrayNum == 0) {
+        pwVar5 = L"";
+      }
+      else {
+        pwVar5 = *(wchar_t **)&(pFVar4->Data).AllocatorInstance;
+      }
+      UE::Logging::Private::BasicLog
+                ((FLogCategoryBase *)&LogConveyorChainSubsystemReplicationComponent,&::LOG_Static,
+                 local_38._8_8_ & 0xffffffff,pwVar5);
+      if (local_18.Data.AllocatorInstance != (ForElementType<wchar_t>)0x0) {
+        FMemory::Free((void *)local_18.Data.AllocatorInstance);
+      }
+    }
+    local_res8 = &local_38;
+    local_20 = &local_res8;
+    local_28 = UE::Core::Private::Function::
+               TFunctionRefCaller<`UFGConveyorChainSubsystemReplicationComponent::SendMessage<FConveyorChainSubsystemInitialReplicationMessage>'::__l2::<lambda_1>,void___cdecl(FArchive_&)>
+               ::Call;
+    SendRawMessage(this,InitialReplication,(TFunctionRef<void___cdecl(FArchive_&)> *)&local_28);
+    if (local_38.AllocatorInstance != (ForElementType<TObjectPtr<UAkAudioEvent>_>)0x0) {
+      FMemory::Free((void *)local_38.AllocatorInstance);
+    }
+    return;
+  }
+  `UFGConveyorChainSubsystemReplicationComponent::SendInitialReplicationData'::__l6::Impl::
+  ExecCheckImplInternal();
+  pcVar2 = (code *)swi(3);
+  (*pcVar2)();
+  return;
+}
+
+
+
+// =========================================================
+// UFGConveyorChainRemoteCallObject::Server_RequestChainItemUpdate_Implementation
+// Entry: 180726420
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+/* WARNING: Enum "EStreamingSourcePriority": Some values do not have unique names */
+
+void __thiscall
+UFGConveyorChainRemoteCallObject::Server_RequestChainItemUpdate_Implementation
+          (UFGConveyorChainRemoteCallObject *this,FConveyorChainItemRPCData *param_1)
+
+{
+  int iVar1;
+  code *pcVar2;
+  bool bVar3;
+  uint uVar4;
+  void *unaff_retaddr;
+  FConveyorChainItemRPCData local_38;
+  
+                    /* 0x726420  29103
+                       ?Server_RequestChainItemUpdate_Implementation@UFGConveyorChainRemoteCallObject@@UEAAXAEBUFConveyorChainItemRPCData@@@Z
+                        */
+  if ((this->RequestedItemChainActors).ArrayNum != 0) {
+    `UFGConveyorChainRemoteCallObject::Server_RequestChainItemUpdate_Implementation'::__l6::Impl::
+    ExecCheckImplInternal();
+    pcVar2 = (code *)swi(3);
+    (*pcVar2)();
+    return;
+  }
+  local_38.ChainActors.AllocatorInstance = (ForElementType<AFGConveyorChainActor_*>)0x0;
+  local_38.ChainActors.ArrayNum = 0;
+  local_38.ChainActors.ArrayMax = 0;
+  local_38.IsServerData = false;
+  if (&local_38 == param_1) {
+    bVar3 = FDebug::CheckVerifyFailedImpl
+                      ("(void*)this != (void*)&Source",
+                       "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                       ,0x799,unaff_retaddr,L"");
+    if (bVar3) {
+      pcVar2 = (code *)swi(3);
+      (*pcVar2)();
+      return;
+    }
+  }
+  iVar1 = (param_1->ChainActors).ArrayNum;
+  if (iVar1 != 0) {
+    uVar4 = local_38.ChainActors.ArrayNum + iVar1;
+    if ((int)uVar4 < 0) {
+      UE::Core::Private::OnInvalidArrayNum((ulonglong)uVar4);
+      pcVar2 = (code *)swi(3);
+      (*pcVar2)();
+      return;
+    }
+    if (local_38.ChainActors.ArrayMax < (int)uVar4) {
+      TArray<TSubclassOf<UFGCategory>,TSizedDefaultAllocator<32>_>::ResizeTo
+                ((TArray<TSubclassOf<UFGCategory>,TSizedDefaultAllocator<32>_> *)&local_38,uVar4);
+    }
+    memcpy((void *)((longlong)local_38.ChainActors.AllocatorInstance +
+                   (longlong)local_38.ChainActors.ArrayNum * 8),
+           (void *)(param_1->ChainActors).AllocatorInstance,(longlong)iVar1 << 3);
+    local_38.ChainActors.ArrayNum = local_38.ChainActors.ArrayNum + iVar1;
+  }
+  local_38.ChainSubsystem = param_1->ChainSubsystem;
+  local_38.ChainRCO = param_1->ChainRCO;
+  local_38.PlayerController = param_1->PlayerController;
+  local_38.IsServerData = true;
+  Client_RespondChainItemUpdate(this,&local_38);
+  if (local_38.ChainActors.AllocatorInstance != (ForElementType<AFGConveyorChainActor_*>)0x0) {
+    FMemory::Free((void *)local_38.ChainActors.AllocatorInstance);
+  }
+  return;
+}
+
+
+
+// =========================================================
+// UFGConveyorChainRemoteCallObject::Server_RequestChainSegmentData_Implementation
+// Entry: 180726530
+// =========================================================
+
+/* WARNING: Enum "Type": Some values do not have unique names */
+/* WARNING: Enum "ERHIAccess": Some values do not have unique names */
+/* WARNING: Enum "EResourceTransitionFlags": Some values do not have unique names */
+
+void __thiscall
+UFGConveyorChainRemoteCallObject::Server_RequestChainSegmentData_Implementation
+          (UFGConveyorChainRemoteCallObject *this,FConveyorChainSegmentRPCData *param_1)
+
+{
+  int iVar1;
+  code *pcVar2;
+  bool bVar3;
+  uint uVar4;
+  void *unaff_retaddr;
+  FConveyorChainSegmentRPCData local_28;
+  
+                    /* 0x726530  29105
+                       ?Server_RequestChainSegmentData_Implementation@UFGConveyorChainRemoteCallObject@@UEAAXAEBUFConveyorChainSegmentRPCData@@@Z
+                        */
+  local_28.ChainActors.AllocatorInstance = (ForElementType<AFGConveyorChainActor_*>)0x0;
+  local_28.ChainActors.ArrayNum = 0;
+  local_28.ChainActors.ArrayMax = 0;
+  local_28.IsServerData = false;
+  if (&local_28 == param_1) {
+    bVar3 = FDebug::CheckVerifyFailedImpl
+                      ("(void*)this != (void*)&Source",
+                       "D:\\BuildAgent\\work\\SR11_BT\\UE4\\Engine\\Source\\Runtime\\Core\\Public\\Containers\\Array.h"
+                       ,0x799,unaff_retaddr,L"");
+    if (bVar3) {
+      pcVar2 = (code *)swi(3);
+      (*pcVar2)();
+      return;
+    }
+  }
+  iVar1 = (param_1->ChainActors).ArrayNum;
+  if (iVar1 != 0) {
+    uVar4 = local_28.ChainActors.ArrayNum + iVar1;
+    if ((int)uVar4 < 0) {
+      UE::Core::Private::OnInvalidArrayNum((ulonglong)uVar4);
+      pcVar2 = (code *)swi(3);
+      (*pcVar2)();
+      return;
+    }
+    if (local_28.ChainActors.ArrayMax < (int)uVar4) {
+      TArray<TSubclassOf<UFGCategory>,TSizedDefaultAllocator<32>_>::ResizeTo
+                ((TArray<TSubclassOf<UFGCategory>,TSizedDefaultAllocator<32>_> *)&local_28,uVar4);
+    }
+    memcpy((void *)((longlong)local_28.ChainActors.AllocatorInstance +
+                   (longlong)local_28.ChainActors.ArrayNum * 8),
+           (void *)(param_1->ChainActors).AllocatorInstance,(longlong)iVar1 << 3);
+    local_28.ChainActors.ArrayNum = local_28.ChainActors.ArrayNum + iVar1;
+  }
+  local_28.ChainRCO = param_1->ChainRCO;
+  local_28.IsServerData = true;
+  Client_RespondChainSegmentData(this,&local_28);
+  if (local_28.ChainActors.AllocatorInstance != (ForElementType<AFGConveyorChainActor_*>)0x0) {
+    FMemory::Free((void *)local_28.ChainActors.AllocatorInstance);
+  }
+  return;
+}
+
+
+
+// =========================================================
+// `UFGConveyorChainSubsystemReplicationComponent::ReceiveInitialReplicationData'::__l6::Impl::ExecCheckImplInternal
+// Entry: 180c87e70
+// =========================================================
+
+void __cdecl
+`UFGConveyorChainSubsystemReplicationComponent::ReceiveInitialReplicationData'::__l6::Impl::
+ExecCheckImplInternal(void)
+
+{
+  void *unaff_retaddr;
+  
+  FDebug::CheckVerifyFailedImpl
+            ("mConveyorChainSubsystem",
+             "D:\\BuildAgent\\work\\SR11_BT\\UE4\\FactoryGame\\Source\\FactoryGame\\Private\\FGConveyorChainSubsystemReplicationComponent.cpp"
+             ,0x4d,unaff_retaddr,L"");
+  return;
+}
+
+
+
+// =========================================================
+// `UFGConveyorChainSubsystemReplicationComponent::SendInitialReplicationData'::__l6::Impl::ExecCheckImplInternal
+// Entry: 180c87f30
+// =========================================================
+
+void __cdecl
+`UFGConveyorChainSubsystemReplicationComponent::SendInitialReplicationData'::__l6::Impl::
+ExecCheckImplInternal(void)
+
+{
+  void *unaff_retaddr;
+  
+  FDebug::CheckVerifyFailedImpl
+            ("mConveyorChainSubsystem",
+             "D:\\BuildAgent\\work\\SR11_BT\\UE4\\FactoryGame\\Source\\FactoryGame\\Private\\FGConveyorChainSubsystemReplicationComponent.cpp"
+             ,0x42,unaff_retaddr,L"");
+  return;
+}
+
+
+
+// =========================================================
+// `UFGConveyorChainRemoteCallObject::Server_RequestChainItemUpdate_Implementation'::__l6::Impl::ExecCheckImplInternal
+// Entry: 180c87fb0
+// =========================================================
+
+void __cdecl
+`UFGConveyorChainRemoteCallObject::Server_RequestChainItemUpdate_Implementation'::__l6::Impl::
+ExecCheckImplInternal(void)
+
+{
+  void *unaff_retaddr;
+  
+  FDebug::CheckVerifyFailedImpl
+            ("RequestedItemChainActors.Num() == 0",
+             "D:\\BuildAgent\\work\\SR11_BT\\UE4\\FactoryGame\\Source\\FactoryGame\\Private\\FGConveyorChainSubsystem.cpp"
+             ,0x2fa,unaff_retaddr,L"");
+  return;
+}
+
+
+
+// =========================================================
+// `AFGConveyorChainActor::BuildChain'::__l9::Impl::ExecCheckImplInternal
+// Entry: 180c88070
+// =========================================================
+
+void __cdecl `AFGConveyorChainActor::BuildChain'::__l9::Impl::ExecCheckImplInternal(void)
+
+{
+  void *unaff_retaddr;
+  
+  FDebug::CheckVerifyFailedImpl
+            ("mConveyorChainSubsystem",
+             "D:\\BuildAgent\\work\\SR11_BT\\UE4\\FactoryGame\\Source\\FactoryGame\\Private\\FGConveyorChainActor.cpp"
+             ,0x3c7,unaff_retaddr,L"");
+  return;
+}
+
+
+
